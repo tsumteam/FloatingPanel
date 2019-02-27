@@ -4,24 +4,40 @@
 //
 
 import UIKit
+import simd
+
+internal func displayTrunc(_ v: CGFloat, by s: CGFloat) -> CGFloat {
+    let base = (1 / s)
+    let t = v.rounded(.down)
+    return t + ((v - t) / base).rounded(.toNearestOrAwayFromZero) * base
+}
+
+internal func displayEqual(_ lhs: CGFloat, _ rhs: CGFloat, by displayScale: CGFloat) -> Bool {
+    return displayTrunc(lhs, by: displayScale) == displayTrunc(rhs, by: displayScale)
+}
 
 protocol LayoutGuideProvider {
     var topAnchor: NSLayoutYAxisAnchor { get }
     var bottomAnchor: NSLayoutYAxisAnchor { get }
+    var heightAnchor: NSLayoutDimension { get }
 }
 extension UILayoutGuide: LayoutGuideProvider {}
 
-class CustomLayoutGuide: LayoutGuideProvider {
+private class CustomLayoutGuide: LayoutGuideProvider {
     let topAnchor: NSLayoutYAxisAnchor
     let bottomAnchor: NSLayoutYAxisAnchor
-    init(topAnchor: NSLayoutYAxisAnchor, bottomAnchor: NSLayoutYAxisAnchor) {
+    let heightAnchor: NSLayoutDimension
+    init(topAnchor: NSLayoutYAxisAnchor,
+         bottomAnchor: NSLayoutYAxisAnchor,
+         heightAnchor: NSLayoutDimension) {
         self.topAnchor = topAnchor
         self.bottomAnchor = bottomAnchor
+        self.heightAnchor = heightAnchor
     }
 }
 
 extension UIViewController {
-    @objc var layoutInsets: UIEdgeInsets {
+    @objc var fp_safeAreaInsets: UIEdgeInsets {
         if #available(iOS 11.0, *) {
             return view.safeAreaInsets
         } else {
@@ -32,12 +48,13 @@ extension UIViewController {
         }
     }
 
-    var layoutGuide: LayoutGuideProvider {
+    var fp_safeAreaLayoutGuide: LayoutGuideProvider {
         if #available(iOS 11.0, *) {
             return view!.safeAreaLayoutGuide
         } else {
             return CustomLayoutGuide(topAnchor: topLayoutGuide.bottomAnchor,
-                                     bottomAnchor: bottomLayoutGuide.topAnchor)
+                                     bottomAnchor: bottomLayoutGuide.topAnchor,
+                                     heightAnchor: topLayoutGuide.bottomAnchor.anchorWithOffset(to: bottomLayoutGuide.topAnchor))
         }
     }
 }
@@ -84,7 +101,6 @@ extension UIView {
 }
 
 #if __FP_LOG
-#if swift(>=4.2)
 extension UIGestureRecognizer.State: CustomDebugStringConvertible {
     public var debugDescription: String {
         switch self {
@@ -94,23 +110,10 @@ extension UIGestureRecognizer.State: CustomDebugStringConvertible {
         case .cancelled: return "cancelled"
         case .ended: return "endeded"
         case .possible: return "possible"
+        @unknown default: return ""
         }
     }
 }
-#else
-extension UIGestureRecognizerState: CustomDebugStringConvertible {
-    public var debugDescription: String {
-        switch self {
-        case .began: return "began"
-        case .changed: return "changed"
-        case .failed: return "failed"
-        case .cancelled: return "cancelled"
-        case .ended: return "endeded"
-        case .possible: return "possible"
-        }
-    }
-}
-#endif
 #endif
 
 extension UIScrollView {
@@ -137,15 +140,6 @@ extension CGPoint {
     }
 }
 
-extension UITraitCollection {
-    func shouldUpdateLayout(from previous: UITraitCollection) -> Bool {
-        return previous.horizontalSizeClass != horizontalSizeClass
-            || previous.verticalSizeClass != verticalSizeClass
-            || previous.preferredContentSizeCategory != preferredContentSizeCategory
-            || previous.layoutDirection != layoutDirection
-    }
-}
-
 extension NSLayoutConstraint {
     static func activate(constraint: NSLayoutConstraint?) {
         guard let constraint = constraint else { return }
@@ -154,5 +148,14 @@ extension NSLayoutConstraint {
     static func deactivate(constraint: NSLayoutConstraint?) {
         guard let constraint = constraint else { return }
         self.deactivate([constraint])
+    }
+}
+
+extension UIEdgeInsets {
+    var horizontalInset: CGFloat {
+        return self.left + self.right
+    }
+    var verticalInset: CGFloat {
+        return self.top + self.bottom
     }
 }

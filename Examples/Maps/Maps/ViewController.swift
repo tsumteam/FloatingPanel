@@ -1,46 +1,38 @@
-//
 //  Copyright © 2018 Shin Yamamoto. All rights reserved.
-//
 
 import UIKit
 import MapKit
 import FloatingPanel
 
-class ViewController: UIViewController, MKMapViewDelegate, UISearchBarDelegate, FloatingPanelControllerDelegate {
-    var fpc: FloatingPanelController!
-    var searchVC: SearchPanelViewController!
+class ViewController: UIViewController, MKMapViewDelegate {
+    lazy var fpc = FloatingPanelController()
+    lazy var fpcDelegate: FloatingPanelControllerDelegate = (traitCollection.userInterfaceIdiom == .pad) ? PadPanelDelegate(owner: self) : PhonePanelDelegate(owner: self)
+    lazy var searchVC = storyboard?.instantiateViewController(withIdentifier: "SearchPanel") as! SearchPanelViewController
 
     @IBOutlet weak var mapView: MKMapView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
-        // Initialize FloatingPanelController
-        fpc = FloatingPanelController()
-        fpc.delegate = self
 
-        // Initialize FloatingPanelController and add the view
-        fpc.surfaceView.backgroundColor = .clear
-        if #available(iOS 11, *) {
-            fpc.surfaceView.cornerRadius = 9.0
-        } else {
-            fpc.surfaceView.cornerRadius = 0.0
-        }
-        fpc.surfaceView.shadowHidden = false
-
-        searchVC = storyboard?.instantiateViewController(withIdentifier: "SearchPanel") as? SearchPanelViewController
+        fpc.contentMode = .fitToBounds
+        fpc.delegate = fpcDelegate
 
         // Set a content view controller
         fpc.set(contentViewController: searchVC)
         fpc.track(scrollView: searchVC.tableView)
 
         setupMapView()
+
+        switch traitCollection.userInterfaceIdiom {
+        case .pad:
+            layoutPanelForPad()
+        default:
+            layoutPanelForPhone()
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        //  Add FloatingPanel to a view with animation.
-        fpc.addPanel(toParent: self, animated: true)
 
         // Must be here
         searchVC.searchBar.delegate = self
@@ -69,178 +61,139 @@ class ViewController: UIViewController, MKMapViewDelegate, UISearchBarDelegate, 
         mapView = nil
     }
 
-    // MARK: UISearchBarDelegate
+    func layoutPanelForPad() {
+        view.addSubview(fpc.view)
+        addChild(fpc)
 
+        fpc.behavior = SearchPaneliPadBehavior()
+
+        fpc.view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        fpc.view.layer.cornerRadius = 10.0
+        fpc.view.frame = view.bounds // Needed for a correct safe area configuration
+        fpc.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            fpc.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8.0),
+            fpc.view.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 8.0),
+            fpc.view.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 0.0),
+            fpc.view.widthAnchor.constraint(equalToConstant: 375),
+        ])
+        fpc.show(animated: false) { [weak self] in
+            guard let self = self else { return }
+            self.didMove(toParent: self)
+        }
+
+        fpc.surfaceView.grabbableAreaSize = CGSize(width: fpc.surfaceView.bounds.width,
+                                                   height: 44.0)
+        appearanceForPad()
+    }
+
+    func layoutPanelForPhone() {
+        fpc.addPanel(toParent: self, animated: true)
+    }
+
+    func appearanceForPad() {
+        fpc.view.clipsToBounds = false
+        let appearance = FloatingPanelSurfaceAppearance()
+        appearance.cornerRadius = 8.0
+        let shadow = FloatingPanelSurfaceAppearance.Shadow()
+        shadow.color = UIColor.black
+        shadow.offset = CGSize(width: 0, height: 16)
+        shadow.radius = 16
+        shadow.spread = 8
+        appearance.shadows = [shadow]
+        appearance.backgroundColor = .clear
+        fpc.surfaceView.appearance = appearance
+    }
+}
+
+// MARK: UISearchBarDelegate
+
+extension ViewController: UISearchBarDelegate {
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
         searchBar.showsCancelButton  = false
-        searchVC.hideHeader()
+        searchVC.hideHeader(animated: true)
         fpc.move(to: .half, animated: true)
     }
 
     func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
         searchBar.showsCancelButton = true
-        searchVC.showHeader()
+        searchVC.showHeader(animated: true)
         searchVC.tableView.alpha = 1.0
         fpc.move(to: .full, animated: true)
     }
+}
 
-    // MARK: FloatingPanelControllerDelegate
-    
-    func floatingPanel(_ vc: FloatingPanelController, layoutFor newCollection: UITraitCollection) -> FloatingPanelLayout? {
+// MARK: - iPhone
+
+class PhonePanelDelegate: NSObject, FloatingPanelControllerDelegate {
+    unowned let owner: ViewController
+
+    init(owner: ViewController) {
+        self.owner = owner
+    }
+
+    func floatingPanel(_ vc: FloatingPanelController, layoutFor newCollection: UITraitCollection) -> FloatingPanelLayout {
         switch newCollection.verticalSizeClass {
         case .compact:
-            fpc.surfaceView.borderWidth = 1.0 / traitCollection.displayScale
-            fpc.surfaceView.borderColor = UIColor.black.withAlphaComponent(0.2)
+            let appearance = vc.surfaceView.appearance
+            appearance.borderWidth = 1.0 / owner.traitCollection.displayScale
+            appearance.borderColor = UIColor.black.withAlphaComponent(0.2)
+            vc.surfaceView.appearance = appearance
             return SearchPanelLandscapeLayout()
         default:
-            fpc.surfaceView.borderWidth = 0.0
-            fpc.surfaceView.borderColor = nil
-            return nil
+            let appearance = vc.surfaceView.appearance
+            appearance.borderWidth = 0.0
+            appearance.borderColor = nil
+            vc.surfaceView.appearance = appearance
+            return FloatingPanelBottomLayout()
         }
     }
 
     func floatingPanelDidMove(_ vc: FloatingPanelController) {
-        let y = vc.surfaceView.frame.origin.y
-        let tipY = vc.originYOfSurface(for: .tip)
-        if y > tipY - 44.0 {
-            let progress = max(0.0, min((tipY  - y) / 44.0, 1.0))
-            self.searchVC.tableView.alpha = progress
+        debugPrint("surfaceEdgeLocation: ", vc.surfaceEdgeLocation)
+        let loc = vc.surfaceEdgeLocation
+
+        if vc.isDecelerating == false {
+            let minY = vc.surfaceEdgeLocation(for: .full).y - 6.0
+            let maxY = vc.surfaceEdgeLocation(for: .tip).y + 6.0
+            vc.surfaceEdgeLocation = CGPoint(x: loc.x, y: min(max(loc.y, minY), maxY))
+        }
+
+        let tipY = vc.surfaceEdgeLocation(for: .tip).y
+        if loc.y > tipY - 44.0 {
+            let progress = max(0.0, min((tipY  - loc.y) / 44.0, 1.0))
+            owner.searchVC.tableView.alpha = progress
+        } else {
+            owner.searchVC.tableView.alpha = 1.0
         }
         debugPrint("NearbyState : ",vc.nearbyState)
     }
 
     func floatingPanelWillBeginDragging(_ vc: FloatingPanelController) {
-        if vc.position == .full {
-            searchVC.searchBar.showsCancelButton = false
-            searchVC.searchBar.resignFirstResponder()
+        if vc.state == .full {
+            owner.searchVC.searchBar.showsCancelButton = false
+            owner.searchVC.searchBar.resignFirstResponder()
         }
     }
 
-    func floatingPanelDidEndDragging(_ vc: FloatingPanelController, withVelocity velocity: CGPoint, targetPosition: FloatingPanelPosition) {
-        if targetPosition != .full {
-            searchVC.hideHeader()
+    func floatingPanelWillEndDragging(_ vc: FloatingPanelController, withVelocity velocity: CGPoint, targetState: UnsafeMutablePointer<FloatingPanelState>) {
+        if targetState.pointee != .full {
+            owner.searchVC.hideHeader(animated: true)
         }
-
-        UIView.animate(withDuration: 0.25,
-                       delay: 0.0,
-                       options: .allowUserInteraction,
-                       animations: {
-                        if targetPosition == .tip {
-                            self.searchVC.tableView.alpha = 0.0
-                        } else {
-                            self.searchVC.tableView.alpha = 1.0
-                        }
-        }, completion: nil)
     }
 }
 
-class SearchPanelViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
-
-    @IBOutlet weak var tableView: UITableView!
-    @IBOutlet weak var searchBar: UISearchBar!
-    @IBOutlet weak var visualEffectView: UIVisualEffectView!
-
-    // For iOS 10 only
-    private lazy var shadowLayer: CAShapeLayer = CAShapeLayer()
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        tableView.dataSource = self
-        tableView.delegate = self
-        searchBar.placeholder = "Search for a place or address"
-        searchBar.setSearchText(fontSize: 15.0)
-
-        hideHeader()
+class SearchPanelLandscapeLayout: FloatingPanelLayout {
+    let anchorPosition: FloatingPanelPosition  = .bottom
+    let initialState: FloatingPanelState = .tip
+    var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
+        return [
+            .full: FloatingPanelLayoutAnchor(absoluteInset: 16.0, edge: .top, referenceGuide: .safeArea),
+            .tip: FloatingPanelLayoutAnchor(absoluteInset: 69.0, edge: .bottom, referenceGuide: .safeArea),
+        ]
     }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        if #available(iOS 11, *) {
-        } else {
-            // Exmaple: Add rounding corners on iOS 10
-            visualEffectView.layer.cornerRadius = 9.0
-            visualEffectView.clipsToBounds = true
-
-            // Exmaple: Add shadow manually on iOS 10
-            view.layer.insertSublayer(shadowLayer, at: 0)
-            let rect = visualEffectView.frame
-            let path = UIBezierPath(roundedRect: rect,
-                                    byRoundingCorners: [.topLeft, .topRight],
-                                    cornerRadii: CGSize(width: 9.0, height: 9.0))
-            shadowLayer.frame = visualEffectView.frame
-            shadowLayer.shadowPath = path.cgPath
-            shadowLayer.shadowColor = UIColor.black.cgColor
-            shadowLayer.shadowOffset = CGSize(width: 0.0, height: 1.0)
-            shadowLayer.shadowOpacity = 0.2
-            shadowLayer.shadowRadius = 3.0
-        }
-    }
-
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 100
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
-        if let cell = cell as? SearchCell {
-            switch indexPath.row {
-            case 0:
-                cell.iconImageView.image = UIImage(named: "mark")
-                cell.titleLabel.text = "Marked Location"
-                cell.subTitleLabel.text = "Golden Gate Bridge, San Francisco"
-            default:
-                cell.iconImageView.image = UIImage(named: "like")
-                cell.titleLabel.text = "Favorites"
-                cell.subTitleLabel.text = "0 Places"
-            }
-        }
-        return cell
-    }
-
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: false)
-    }
-
-    func showHeader() {
-        changeHeader(height: 116.0)
-    }
-
-    func hideHeader() {
-        changeHeader(height: 0.0)
-    }
-
-    func changeHeader(height: CGFloat) {
-        tableView.beginUpdates()
-        if let headerView = tableView.tableHeaderView  {
-            UIView.animate(withDuration: 0.25) {
-                var frame = headerView.frame
-                frame.size.height = height
-                self.tableView.tableHeaderView?.frame = frame
-            }
-        }
-        tableView.endUpdates()
-    }
-}
-
-public class SearchPanelLandscapeLayout: FloatingPanelLayout {
-    public var initialPosition: FloatingPanelPosition {
-        return .tip
-    }
-    
-    public var supportedPositions: Set<FloatingPanelPosition> {
-        return [.full, .tip]
-    }
-
-    public func insetFor(position: FloatingPanelPosition) -> CGFloat? {
-        switch position {
-        case .full: return 16.0
-        case .tip: return 69.0
-        default: return nil
-        }
-    }
-
-    public func prepareLayout(surfaceView: UIView, in view: UIView) -> [NSLayoutConstraint] {
+    func prepareLayout(surfaceView: UIView, in view: UIView) -> [NSLayoutConstraint] {
         if #available(iOS 11.0, *) {
             return [
                 surfaceView.leftAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leftAnchor, constant: 8.0),
@@ -253,33 +206,69 @@ public class SearchPanelLandscapeLayout: FloatingPanelLayout {
             ]
         }
     }
+}
 
-    public func backdropAlphaFor(position: FloatingPanelPosition) -> CGFloat {
+// MARK: - iPad
+
+class PadPanelDelegate: NSObject, FloatingPanelControllerDelegate {
+    class PadBottomLayout: FloatingPanelBottomLayout {
+        override func backdropAlpha(for state: FloatingPanelState) -> CGFloat {
+            return 0.0
+        }
+    }
+
+    unowned let owner: ViewController
+
+    init(owner: ViewController) {
+        self.owner = owner
+    }
+
+    func floatingPanel(_ vc: FloatingPanelController, layoutFor size: CGSize) -> FloatingPanelLayout {
+        let isLandscape: Bool = {
+            if #available(iOS 13.0, *) {
+                return vc.view.window?.windowScene?.interfaceOrientation.isLandscape ?? false
+            } else {
+                return UIApplication.shared.statusBarOrientation.isLandscape
+            }
+        }()
+        if isLandscape {
+            return SearchPaneliPadLayout()
+        } else {
+            return PadBottomLayout()
+        }
+    }
+
+    func floatingPanel(_ vc: FloatingPanelController, layoutFor newCollection: UITraitCollection) -> FloatingPanelLayout {
+        SearchPaneliPadLayout()
+    }
+}
+
+class SearchPaneliPadLayout: FloatingPanelLayout {
+    let anchorPosition: FloatingPanelPosition  = .top
+    let initialState: FloatingPanelState = .tip
+    var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
+        return [
+            .tip: FloatingPanelLayoutAnchor(absoluteInset: 80.0, edge: .top, referenceGuide: .superview),
+            .half: FloatingPanelLayoutAnchor(absoluteInset: 200.0, edge: .top, referenceGuide: .superview),
+            .full: FloatingPanelLayoutAnchor(absoluteInset: 60.0, edge: .bottom, referenceGuide: .superview),
+        ]
+    }
+    func backdropAlpha(for state: FloatingPanelState) -> CGFloat {
         return 0.0
     }
 }
 
-class SearchCell: UITableViewCell {
-    @IBOutlet weak var iconImageView: UIImageView!
-    @IBOutlet weak var titleLabel: UILabel!
-    @IBOutlet weak var subTitleLabel: UILabel!
-}
-
-class SearchHeaderView: UIView {
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-        self.clipsToBounds = true
+class SearchPaneliPadBehavior: FloatingPanelBehavior {
+    var springDecelerationRate: CGFloat {
+        return UIScrollView.DecelerationRate.fast.rawValue - 0.003
     }
-}
-
-extension UISearchBar {
-    func setSearchText(fontSize: CGFloat) {
-        if #available(iOS 13, *) {
-            let font = searchTextField.font
-            searchTextField.font = font?.withSize(fontSize)
-        } else {
-            let textField = value(forKey: "_searchField") as! UITextField
-            textField.font = textField.font?.withSize(fontSize)
-        }
+    var springResponseTime: CGFloat {
+        return 0.3
+    }
+    var momentumProjectionRate: CGFloat {
+        return UIScrollView.DecelerationRate.fast.rawValue
+    }
+    func shouldProjectMomentum(_ fpc: FloatingPanelController, to proposedTargetPosition: FloatingPanelState) -> Bool {
+        return true
     }
 }

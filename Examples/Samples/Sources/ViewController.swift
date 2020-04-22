@@ -1114,13 +1114,14 @@ extension TabBarContentViewController: FloatingPanelControllerDelegate {
 
     func floatingPanelDidMove(_ vc: FloatingPanelController) {
         guard self.tabBarItem.tag == 2 else { return }
-
         switch tab3Mode {
         case .changeAutoLayout:
             /* Good solution: Manipulate top constraint */
             assert(consoleVC.textViewTopConstraint != nil)
-            if vc.surfaceView.frame.minY + threeLayout.topPadding < vc.layoutInsets.top {
-                consoleVC.textViewTopConstraint?.constant = vc.layoutInsets.top - vc.surfaceView.frame.minY
+            let safeAreaTop = vc.layoutInsets.top
+            if vc.surfaceEdgeLocation.y + threeLayout.topPadding < safeAreaTop {
+                consoleVC.textViewTopConstraint?.constant = min(safeAreaTop - vc.surfaceEdgeLocation.y,
+                                                                safeAreaTop)
             } else {
                 consoleVC.textViewTopConstraint?.constant = threeLayout.topPadding
             }
@@ -1155,41 +1156,6 @@ extension TabBarContentViewController: FloatingPanelControllerDelegate {
             threeLayout.leftConstraint.constant = 0.0
             threeLayout.rightConstraint.constant = 0.0
         }
-
-        vc.view.layoutIfNeeded() // MUST
-    }
-
-    func floatingPanelDidChangePosition(_ vc: FloatingPanelController) {
-        guard self.tabBarItem.tag == 2 else { return }
-
-        switch tab3Mode {
-        case .changeAutoLayout:
-            /* Good Solution: Manipulate top constraint */
-            assert(consoleVC.textViewTopConstraint != nil)
-            consoleVC.textViewTopConstraint?.constant = (vc.state == .full) ? vc.layoutInsets.top : 17.0
-
-        case .changeOffset:
-            /* Bad Solution: Manipulate scroll content inset */
-            guard let scrollView = consoleVC.textView else { return }
-            var insets = vc.adjustedContentInsets
-            insets.top = (vc.state == .full) ? vc.layoutInsets.top : 0.0
-            scrollView.contentInset = insets
-            if scrollView.contentOffset.y - scrollView.contentInset.top < 0.0  {
-                scrollView.contentOffset = CGPoint(x: 0.0,
-                                                   y: 0.0 - scrollView.contentInset.top)
-            }
-        }
-
-        if vc.state == .tip {
-            threeLayout.leftConstraint.constant = threeLayout.sideMargin
-            threeLayout.rightConstraint.constant = -threeLayout.sideMargin
-        } else {
-            threeLayout.leftConstraint.constant = 0.0
-            threeLayout.rightConstraint.constant = 0.0
-        }
-        // Can call it, but it's not necessary because it will be also called
-        // by FloatingPanelController after the delegate method
-        vc.view.layoutIfNeeded()
     }
 }
 

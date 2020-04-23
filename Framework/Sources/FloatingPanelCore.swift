@@ -543,7 +543,6 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         let currentY = layoutAdapter.surfaceEdgeLocation.y
 
         backdropView.alpha = getBackdropAlpha(at: currentY, with: translation)
-        preserveContentVCLayoutIfNeeded()
 
         let didMove = (preY != currentY)
         guard didMove else { return }
@@ -567,62 +566,6 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             }
         }
         return true
-    }
-
-    private var disabledFixedEdgeAutoLayout = false
-    private var disabledAutoLayoutItems: Set<NSLayoutConstraint> = []
-    // Prevent stretching a view having a constraint to SafeArea.bottom in an overflow
-    // from the full position because SafeArea is global in a screen.
-    private func preserveContentVCLayoutIfNeeded() {
-        guard let vc = viewcontroller else { return }
-        guard vc.contentMode != .fitToBounds else { return }
-
-        let fixedAnchor: NSLayoutYAxisAnchor? = {
-            switch layoutAdapter.layout.position {
-            case .top:
-                return vc.contentViewController?.fp_safeAreaLayoutGuide.topAnchor
-            case .bottom:
-                return vc.contentViewController?.fp_safeAreaLayoutGuide.bottomAnchor
-            }
-        }()
-        // Must include position Y of the most state
-        if (0 <= layoutAdapter.offsetFromEdgeMost) {
-            if !disabledFixedEdgeAutoLayout {
-                disabledAutoLayoutItems.removeAll()
-                vc.contentViewController?.view?.constraints.forEach({ (const) in
-                    switch fixedAnchor {
-                    case const.firstAnchor:
-                        (const.secondItem as? UIView)?.disableAutoLayout()
-                        const.isActive = false
-                        disabledAutoLayoutItems.insert(const)
-                    case const.secondAnchor:
-                        (const.firstItem as? UIView)?.disableAutoLayout()
-                        const.isActive = false
-                        disabledAutoLayoutItems.insert(const)
-                    default:
-                        break
-                    }
-                })
-            }
-            disabledFixedEdgeAutoLayout = true
-        } else {
-            if disabledFixedEdgeAutoLayout {
-                disabledAutoLayoutItems.forEach({ (const) in
-                    switch fixedAnchor {
-                    case const.firstAnchor:
-                        (const.secondItem as? UIView)?.enableAutoLayout()
-                        const.isActive = true
-                    case const.secondAnchor:
-                        (const.firstItem as? UIView)?.enableAutoLayout()
-                        const.isActive = true
-                    default:
-                        break
-                    }
-                })
-                disabledAutoLayoutItems.removeAll()
-            }
-            disabledFixedEdgeAutoLayout = false
-        }
     }
 
     private func panningEnd(with translation: CGPoint, velocity: CGPoint) {

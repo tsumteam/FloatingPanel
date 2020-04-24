@@ -99,7 +99,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             completion?()
             return
         }
-        if state != layoutAdapter.topMostState {
+        if state != layoutAdapter.edgeMostState {
             lockScrollView()
         }
         tearDownActiveInteraction()
@@ -170,8 +170,8 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         /* log.debug("currentY: \(currentY) translation: \(translation)") */
         let forwardY = (translation.y >= 0)
         let segment = layoutAdapter.segument(at: currentY, forward: forwardY)
-        let lowerPos = segment.lower ?? layoutAdapter.topMostState
-        let upperPos = segment.upper ?? layoutAdapter.bottomMostState
+        let lowerPos = segment.lower ?? layoutAdapter.edgeMostState
+        let upperPos = segment.upper ?? layoutAdapter.edgeLeastState
 
         let pre = forwardY ? lowerPos : upperPos
         let next = forwardY ? upperPos : lowerPos
@@ -342,7 +342,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
                     lockScrollView()
                 } else {
                     if state == layoutAdapter.edgeMostState, self.animator == nil {
-                        switch layoutAdapter.layout.position {
+                        switch layoutAdapter.layout.anchoredPosition {
                         case .top where offset < offsetMax && velocity.y > 0:
                             unlockScrollView()
                         case .bottom where offset > 0 && velocity.y < 0:
@@ -355,7 +355,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             } else {
                 if interactionInProgress {
                     // Show a scroll indicator at the top in dragging.
-                    switch layoutAdapter.layout.position {
+                    switch layoutAdapter.layout.anchoredPosition {
                     case .top where offset <= offsetMax && velocity.y >= 0:
                         unlockScrollView()
                         return
@@ -512,7 +512,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         let offset = scrollView.contentOffset.y - contentOrigin(of: scrollView).y
         // The zero offset must be excluded because the offset is usually zero
         // after a panel moves from half/tip to full.
-        switch layoutAdapter.layout.position {
+        switch layoutAdapter.layout.anchoredPosition {
         case .top:
             let offsetMax = scrollView.fp_contentOffsetMaxY
             if  offset < offsetMax {
@@ -578,7 +578,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
 
     private func shouldOverflow(preY: CGFloat, nextY: CGFloat, dy: CGFloat) -> Bool {
         if let scrollView = scrollView, scrollView.panGestureRecognizer.state == .changed {
-            switch layoutAdapter.layout.position {
+            switch layoutAdapter.layout.anchoredPosition {
             case .top:
                 if preY > 0, preY < nextY {
                     return false
@@ -749,7 +749,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         interactionInProgress = false
 
         // Prevent to keep a scroll view indicator visible at the half/tip position
-        if targetPosition != layoutAdapter.topMostState {
+        if targetPosition != layoutAdapter.edgeMostState {
             lockScrollView()
         }
 
@@ -840,7 +840,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
 
         // Projection
         let decelerationRate = behaviorAdapter.behavior.momentumProjectionRate ?? FloatingPanelDefaultBehavior().momentumProjectionRate
-        let baseY = abs(layoutAdapter.positionY(for: layoutAdapter.bottomMostState) - layoutAdapter.positionY(for: layoutAdapter.topMostState))
+        let baseY = abs(layoutAdapter.positionY(for: layoutAdapter.edgeLeastState) - layoutAdapter.positionY(for: layoutAdapter.edgeMostState))
         let vecY = velocity.y / baseY
         var pY = project(initialVelocity: vecY, decelerationRate: decelerationRate) * baseY + currentY
 

@@ -33,13 +33,13 @@ class FloatingPanelTestLayout: FloatingPanelLayout {
     var initialState: FloatingPanelState {
         return .half
     }
-    var position: FloatingPanelPosition {
+    var anchoredPosition: FloatingPanelPosition {
         return .bottom
     }
     var referenceGuide: FloatingPanelLayoutReferenceGuide {
         return .superview
     }
-    var layoutAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
+    var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
         return [
             .full: FloatingPanelLayoutAnchor(absoluteInset: 20.0, edge: .top, referenceGuide: referenceGuide),
             .half: FloatingPanelLayoutAnchor(absoluteInset: 250.0, edge: .bottom, referenceGuide: referenceGuide),
@@ -52,13 +52,13 @@ class FloatingPanelTop2BottomTestLayout: FloatingPanelLayout {
     var initialState: FloatingPanelState {
         return .half
     }
-    var position: FloatingPanelPosition {
+    var anchoredPosition: FloatingPanelPosition {
         return .top
     }
     var referenceGuide: FloatingPanelLayoutReferenceGuide {
         return .superview
     }
-    var layoutAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
+    var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
         return [
             .full: FloatingPanelLayoutAnchor(absoluteInset: 0.0, edge: .bottom, referenceGuide: referenceGuide),
             .half: FloatingPanelLayoutAnchor(absoluteInset: 250.0, edge: .top, referenceGuide: referenceGuide),

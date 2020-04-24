@@ -295,9 +295,9 @@ class FloatingPanelLayoutAdapter {
         return supportedPositions.sorted(by: {
             switch layout.position {
             case .top:
-                return $0.order > $1.order
-            case .bottom:
                 return $0.order < $1.order
+            case .bottom:
+                return $0.order > $1.order
             }
         })
     }

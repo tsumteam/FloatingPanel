@@ -120,6 +120,13 @@ extension UIScrollView {
     var isLocked: Bool {
         return !showsVerticalScrollIndicator && !bounces &&  isDirectionalLockEnabled
     }
+    var fp_contentInset: UIEdgeInsets {
+        if #available(iOS 11.0, *) {
+            return adjustedContentInset
+        } else {
+            return contentInset
+        }
+    }
 }
 
 extension UISpringTimingParameters {

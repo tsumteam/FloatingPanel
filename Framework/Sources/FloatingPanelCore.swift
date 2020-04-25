@@ -954,7 +954,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         if let vc = viewcontroller, let origin = vc.delegate?.floatingPanel?(vc, contentOffsetForPinning: scrollView) {
             return origin
         }
-        return CGPoint(x: 0.0, y: 0.0 - scrollView.contentInset.top)
+        return CGPoint(x: 0.0, y: 0.0 - scrollView.fp_contentInset.top)
     }
 
     private func allowScrollPanGesture(for scrollView: UIScrollView) -> Bool {

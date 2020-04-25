@@ -95,9 +95,6 @@ extension FloatingPanelState {
         }
         return self
     }
-    func floatingPanel(_ vc: FloatingPanelController, contentOffsetForPinning trackedScrollView: UIScrollView) -> CGPoint {
-        return CGPoint(x: 0.0, y: 0.0 - trackedScrollView.contentInset.top)
-    }
 }
 
 extension FloatingPanelState: CustomDebugStringConvertible {

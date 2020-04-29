@@ -127,6 +127,9 @@ extension UIScrollView {
             return contentInset
         }
     }
+    var fp_contentOffsetMaxY: CGFloat {
+        return max((contentSize.height + fp_contentInset.bottom) - bounds.height, 0.0)
+    }
 }
 
 extension UISpringTimingParameters {

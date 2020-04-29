@@ -304,7 +304,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
                 "location = \(location.y), velocity = \(velocity.y)")
 
             let offset = scrollView.contentOffset.y - contentOrigin(of: scrollView).y
-            let offsetMax = max(scrollView.contentSize.height - scrollView.bounds.height, 0.0)
+            let offsetMax = scrollView.fp_contentOffsetMaxY
 
             if belowEdgeMost {
                 // Scroll offset pinning
@@ -358,30 +358,26 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
                     }
                 } else {
                     if state == layoutAdapter.edgeMostState {
-                        // Hide a scroll indicator just before starting an interaction by swiping a panel down.
-                        if velocity.y > 0, !allowScrollPanGesture(for: scrollView) {
-                            lockScrollView()
-                        }
-                        // Show a scroll indicator when an animation is interrupted at the top and content is scrolled up
-                        if velocity.y < 0, allowScrollPanGesture(for: scrollView) {
-                            unlockScrollView()
-                        }
-                        /* TODO:
-                        switch layoutAdapter.layout.position {
-                        case .top where offset > offsetMax && velocity.y < 0:
-                            lockScrollView()
-                        case .top where offset < offsetMax && velocity.y > 0:
-                            unlockScrollView()
-                        case .bottom where offset < 0 && velocity.y > 0:
+                        switch layoutAdapter.layout.anchoredPosition {
+                        case .top:
+                            if velocity.y < 0, !allowScrollPanGesture(for: scrollView) {
+                                lockScrollView()
+                            }
+                            if velocity.y > 0, allowScrollPanGesture(for: scrollView) {
+                                unlockScrollView()
+                            }
+                        case .bottom:
                             // Hide a scroll indicator just before starting an interaction by swiping a panel down.
-                            lockScrollView()
-                        case .bottom where offset > 0 && velocity.y < 0:
+                            if velocity.y > 0, !allowScrollPanGesture(for: scrollView) {
+                                lockScrollView()
+                            }
                             // Show a scroll indicator when an animation is interrupted at the top and content is scrolled up
-                            unlockScrollView()
+                            if velocity.y < 0, allowScrollPanGesture(for: scrollView) {
+                                unlockScrollView()
+                            }
                         default:
                             break
                         }
-                        */
                         // Adjust a small gap of the scroll offset just before swiping down starts in the grabber area,
                         if grabberAreaFrame.contains(location), grabberAreaFrame.contains(initialLocation) {
                             scrollView.setContentOffset(initialScrollOffset, animated: false)
@@ -490,11 +486,11 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         }
 
         let offset = scrollView.contentOffset.y - contentOrigin(of: scrollView).y
-        let offsetMax = max(scrollView.contentSize.height - scrollView.bounds.height, 0.0)
         // The zero offset must be excluded because the offset is usually zero
         // after a panel moves from half/tip to full.
         switch layoutAdapter.layout.position {
         case .top:
+            let offsetMax = scrollView.fp_contentOffsetMaxY
             if  offset < offsetMax {
                 return true
             }
@@ -744,15 +740,28 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         var offset: CGPoint = .zero
 
         initialFrame = surfaceView.frame
-        if state == layoutAdapter.topMostState, let scrollView = scrollView {
+        if state == layoutAdapter.edgeMostState, let scrollView = scrollView {
             if grabberAreaFrame.contains(location) {
                 initialScrollOffset = scrollView.contentOffset
             } else {
-                initialScrollOffset = contentOrigin(of: scrollView)
-                // Fit the surface bounds to a scroll offset content by startInteraction(at:offset:)
-                let scrollOffsetY = (scrollView.contentOffset.y - contentOrigin(of: scrollView).y)
-                if scrollOffsetY < 0 {
-                    offset = CGPoint(x: -scrollView.contentOffset.x, y: -scrollOffsetY)
+                switch layoutAdapter.layout.anchoredPosition {
+                case .top:
+                    let offsetMax = scrollView.fp_contentOffsetMaxY
+                    initialScrollOffset = CGPoint(x: 0, y: offsetMax)
+                    // Fit the surface bounds to a scroll offset content by startInteraction(at:offset:)
+                    let scrollOffsetY = (scrollView.contentOffset.y - offsetMax)
+                    if scrollOffsetY > 0 {
+                        offset = CGPoint(x: -scrollView.contentOffset.x, y: -scrollOffsetY)
+                    }
+                case .bottom:
+                    initialScrollOffset = contentOrigin(of: scrollView)
+                    // Fit the surface bounds to a scroll offset content by startInteraction(at:offset:)
+                    let scrollOffsetY = (scrollView.contentOffset.y - contentOrigin(of: scrollView).y)
+                    if scrollOffsetY < 0 {
+                        offset = CGPoint(x: -scrollView.contentOffset.x, y: -scrollOffsetY)
+                    }
+                default:
+                    break
                 }
             }
             log.debug("initial scroll offset --", initialScrollOffset)
@@ -958,11 +967,17 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
     }
 
     private func allowScrollPanGesture(for scrollView: UIScrollView) -> Bool {
-        let contentOffset = scrollView.contentOffset - contentOrigin(of: scrollView)
-        if state == layoutAdapter.topMostState {
-            return contentOffset.y <= -30.0 || contentOffset.y > 0
+        guard state == layoutAdapter.edgeMostState else { return false }
+        var offsetY: CGFloat = 0
+        switch layoutAdapter.layout.anchoredPosition {
+        case .top:
+            offsetY = scrollView.fp_contentOffsetMaxY - scrollView.contentOffset.y
+        case .bottom:
+            offsetY = scrollView.contentOffset.y - contentOrigin(of: scrollView).y
+        default:
+            return false
         }
-        return false
+        return offsetY <= -30.0 || offsetY > 0
     }
 }
 

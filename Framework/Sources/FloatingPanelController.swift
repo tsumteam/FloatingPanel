@@ -410,7 +410,6 @@ open class FloatingPanelController: UIViewController {
         switch contentInsetAdjustmentBehavior {
         case .always:
             scrollView?.contentInset = adjustedContentInsets
-            scrollView?.scrollIndicatorInsets = adjustedContentInsets
         default:
             break
         }

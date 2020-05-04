@@ -332,7 +332,7 @@ private class MyZombieViewController: UIViewController, FloatingPanelLayout, Flo
         fpc?.layout = self
         fpc?.behavior = self
     }
-    var anchoredPosition: FloatingPanelPosition {
+    var anchorPosition: FloatingPanelPosition {
         return .bottom
     }
     var initialState: FloatingPanelState {

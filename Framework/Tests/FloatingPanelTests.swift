@@ -63,7 +63,7 @@ class FloatingPanelTests: XCTestCase {
     func test_getBackdropAlpha_1positions() {
         class FloatingPanelLayout1Positions: FloatingPanelLayout {
             let initialState: FloatingPanelState = .full
-            let anchoredPosition: FloatingPanelPosition = .bottom
+            let anchorPosition: FloatingPanelPosition = .bottom
             var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
                 return [.full: FloatingPanelLayoutAnchor(absoluteInset: 20.0, edge: .top, referenceGuide: .superview)]
             }
@@ -85,7 +85,7 @@ class FloatingPanelTests: XCTestCase {
     func test_getBackdropAlpha_2positions() {
         class FloatingPanelLayout2Positions: FloatingPanelLayout {
             let initialState: FloatingPanelState = .half
-            let anchoredPosition: FloatingPanelPosition = .bottom
+            let anchorPosition: FloatingPanelPosition = .bottom
             var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
                 return [
                     .full: FloatingPanelLayoutAnchor(absoluteInset: 20.0, edge: .top, referenceGuide: .superview),
@@ -163,7 +163,7 @@ class FloatingPanelTests: XCTestCase {
     func test_targetPosition_1positions() {
         class FloatingPanelLayout1Positions: FloatingPanelLayout {
             let initialState: FloatingPanelState = .full
-            let anchoredPosition: FloatingPanelPosition = .bottom
+            let anchorPosition: FloatingPanelPosition = .bottom
             var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
                 return [.full: FloatingPanelLayoutAnchor(absoluteInset: 20.0, edge: .top, referenceGuide: .superview)]
             }
@@ -192,7 +192,7 @@ class FloatingPanelTests: XCTestCase {
     func test_targetPosition_2positions() {
         class FloatingPanelLayout2Positions: FloatingPanelLayout {
             let initialState: FloatingPanelState = .half
-            let anchoredPosition: FloatingPanelPosition = .bottom
+            let anchorPosition: FloatingPanelPosition = .bottom
             var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
                 return [
                     .full: FloatingPanelLayoutAnchor(absoluteInset: 20.0, edge: .top, referenceGuide: .superview),
@@ -249,7 +249,7 @@ class FloatingPanelTests: XCTestCase {
     func test_targetPosition_2positionsWithHidden() {
         class FloatingPanelLayout2Positions: FloatingPanelLayout {
             let initialState: FloatingPanelState = .hidden
-            let anchoredPosition: FloatingPanelPosition = .bottom
+            let anchorPosition: FloatingPanelPosition = .bottom
             var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
                 return [
                     .full: FloatingPanelLayoutAnchor(absoluteInset: 20.0, edge: .top, referenceGuide: .superview),
@@ -612,7 +612,7 @@ class FloatingPanelTests: XCTestCase {
     func test_targetPosition_3positionsWithHidden() {
         class FloatingPanelLayout3PositionsWithHidden: FloatingPanelLayout {
             let initialState: FloatingPanelState = .hidden
-            let anchoredPosition: FloatingPanelPosition = .bottom
+            let anchorPosition: FloatingPanelPosition = .bottom
             var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
                 return [
                     .full: FloatingPanelLayoutAnchor(absoluteInset: 20.0, edge: .top, referenceGuide: .superview),
@@ -644,7 +644,7 @@ class FloatingPanelTests: XCTestCase {
     func test_targetPosition_3positionsWithHiddenWithoutFull() {
         class FloatingPanelLayout3Positions: FloatingPanelLayout {
             let initialState: FloatingPanelState = .hidden
-            let anchoredPosition: FloatingPanelPosition = .bottom
+            let anchorPosition: FloatingPanelPosition = .bottom
             var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
                 return [
                     .half: FloatingPanelLayoutAnchor(absoluteInset: 250.0, edge: .bottom, referenceGuide: .superview),

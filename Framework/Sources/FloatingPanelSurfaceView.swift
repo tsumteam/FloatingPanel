@@ -46,11 +46,11 @@ public class FloatingPanelSurfaceAppearance: NSObject {
 
 /// A view that presents a surface interface in a floating panel.
 public class FloatingPanelSurfaceView: UIView {
-    /// A GrabberHandleView object displayed at the top of the surface view.
+    /// A FloatingPanelGrabberView object displayed at the top of the surface view.
     ///
     /// To use a custom grabber handle, hide this and then add the custom one
     /// to the surface view at appropriate coordinates.
-    public let grabberHandle: GrabberHandleView = GrabberHandleView()
+    public let grabber: FloatingPanelGrabberView = FloatingPanelGrabberView()
 
     /// Offset of the grabber handle from the interactive edge.
     public var grabberPaddingFromEdge: CGFloat = 6.0 { didSet {
@@ -116,10 +116,10 @@ public class FloatingPanelSurfaceView: UIView {
             switch position {
             case .top:
                 containerViewEdgeConstraint = containerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -containerMargins.bottom)
-                grabberHandleEdgePaddingConstraint = grabberHandle.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -grabberPaddingFromEdge)
+                grabberHandleEdgePaddingConstraint = grabber.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -grabberPaddingFromEdge)
             case .bottom:
                 containerViewEdgeConstraint = containerView.topAnchor.constraint(equalTo: topAnchor, constant: containerMargins.top)
-                grabberHandleEdgePaddingConstraint = grabberHandle.topAnchor.constraint(equalTo: topAnchor, constant: grabberPaddingFromEdge)
+                grabberHandleEdgePaddingConstraint = grabber.topAnchor.constraint(equalTo: topAnchor, constant: grabberPaddingFromEdge)
             }
             NSLayoutConstraint.activate([containerViewEdgeConstraint,
                                          grabberHandleEdgePaddingConstraint])
@@ -156,9 +156,9 @@ public class FloatingPanelSurfaceView: UIView {
     /// The content height constraint
     private var contentViewHeightConstraint: NSLayoutConstraint?
 
-    private lazy var grabberHandleWidthConstraint = grabberHandle.widthAnchor.constraint(equalToConstant: grabberHandleWidth)
-    private lazy var grabberHandleHeightConstraint = grabberHandle.heightAnchor.constraint(equalToConstant: grabberHandleHeight)
-    private lazy var grabberHandleEdgePaddingConstraint = grabberHandle.topAnchor.constraint(equalTo: topAnchor, constant: grabberPaddingFromEdge)
+    private lazy var grabberHandleWidthConstraint = grabber.widthAnchor.constraint(equalToConstant: grabberHandleWidth)
+    private lazy var grabberHandleHeightConstraint = grabber.heightAnchor.constraint(equalToConstant: grabberHandleHeight)
+    private lazy var grabberHandleEdgePaddingConstraint = grabber.topAnchor.constraint(equalTo: topAnchor, constant: grabberPaddingFromEdge)
 
     public override class var requiresConstraintBasedLayout: Bool { return true }
 
@@ -185,13 +185,13 @@ public class FloatingPanelSurfaceView: UIView {
             containerViewHeightConstraint,
             ])
 
-        addSubview(grabberHandle)
-        grabberHandle.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(grabber)
+        grabber.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             grabberHandleWidthConstraint,
             grabberHandleHeightConstraint,
             grabberHandleEdgePaddingConstraint,
-            grabberHandle.centerXAnchor.constraint(equalTo: centerXAnchor),
+            grabber.centerXAnchor.constraint(equalTo: centerXAnchor),
             ])
     }
 

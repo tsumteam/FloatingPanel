@@ -174,7 +174,7 @@ FloatingPanelController.view (FloatingPanelPassThroughView)
  └─ .surfaceView (FloatingPanelSurfaceView)
     ├─ .containerView (UIView)
     │  └─ .contentView (FloatingPanelController.contentViewController.view)
-    └─ .grabberHandle (GrabberHandleView)
+    └─ .grabber (FloatingPanelGrabberView)
 ```
 
 ## Usage

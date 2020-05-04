@@ -15,9 +15,9 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
         XCTAssertTrue(FloatingPanelSurfaceView.requiresConstraintBasedLayout)
         XCTAssert(surface.contentView == nil)
         surface.layoutIfNeeded()
-        XCTAssert(surface.grabberHandle.frame.minY == 6.0)
-        XCTAssert(surface.grabberHandle.frame.width == surface.grabberHandleWidth)
-        XCTAssert(surface.grabberHandle.frame.height == surface.grabberHandleHeight)
+        XCTAssert(surface.grabber.frame.minY == 6.0)
+        XCTAssert(surface.grabber.frame.width == surface.grabberHandleWidth)
+        XCTAssert(surface.grabber.frame.height == surface.grabberHandleHeight)
         surface.backgroundColor = .red
         surface.layoutIfNeeded()
         XCTAssert(surface.backgroundColor == surface.containerView.backgroundColor)
@@ -90,18 +90,18 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
             XCTAssertNil(surface.contentView)
             surface.layoutIfNeeded()
 
-            XCTAssertEqual(surface.grabberHandle.frame.minY,  6.0)
-            XCTAssertEqual(surface.grabberHandle.frame.width, surface.grabberHandleWidth)
-            XCTAssertEqual(surface.grabberHandle.frame.height, surface.grabberHandleHeight)
+            XCTAssertEqual(surface.grabber.frame.minY,  6.0)
+            XCTAssertEqual(surface.grabber.frame.width, surface.grabberHandleWidth)
+            XCTAssertEqual(surface.grabber.frame.height, surface.grabberHandleHeight)
 
             surface.grabberPaddingFromEdge = 10.0
             surface.grabberHandleWidth = 44.0
             surface.grabberHandleHeight = 12.0
             surface.setNeedsLayout()
             surface.layoutIfNeeded()
-            XCTAssertEqual(surface.grabberHandle.frame.minY,  surface.grabberPaddingFromEdge)
-            XCTAssertEqual(surface.grabberHandle.frame.width, surface.grabberHandleWidth)
-            XCTAssertEqual(surface.grabberHandle.frame.height, surface.grabberHandleHeight)
+            XCTAssertEqual(surface.grabber.frame.minY,  surface.grabberPaddingFromEdge)
+            XCTAssertEqual(surface.grabber.frame.width, surface.grabberHandleWidth)
+            XCTAssertEqual(surface.grabber.frame.height, surface.grabberHandleHeight)
         }
 
         XCTContext.runActivity(named: "Top sheet") { _ in
@@ -110,14 +110,14 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
             XCTAssertNil(surface.contentView)
             surface.layoutIfNeeded()
 
-            XCTAssertEqual(surface.grabberHandle.frame.maxY, (surface.bounds.maxY - 6.0))
-            XCTAssertEqual(surface.grabberHandle.frame.width, surface.grabberHandleWidth)
-            XCTAssertEqual(surface.grabberHandle.frame.height, surface.grabberHandleHeight)
+            XCTAssertEqual(surface.grabber.frame.maxY, (surface.bounds.maxY - 6.0))
+            XCTAssertEqual(surface.grabber.frame.width, surface.grabberHandleWidth)
+            XCTAssertEqual(surface.grabber.frame.height, surface.grabberHandleHeight)
 
             surface.grabberPaddingFromEdge = 10.0
             surface.setNeedsLayout()
             surface.layoutIfNeeded()
-            XCTAssertEqual(surface.grabberHandle.frame.maxY,  surface.bounds.maxY - surface.grabberPaddingFromEdge)
+            XCTAssertEqual(surface.grabber.frame.maxY,  surface.bounds.maxY - surface.grabberPaddingFromEdge)
         }
     }
 

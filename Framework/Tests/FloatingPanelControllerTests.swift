@@ -40,7 +40,7 @@ class FloatingPanelControllerTests: XCTestCase {
                 if newCollection.userInterfaceStyle == .dark {
                     XCTFail()
                 }
-                return FloatingPanelDefaultLayout()
+                return FloatingPanelBottomLayout()
             }
         }
         let myDelegate = MyDelegate()

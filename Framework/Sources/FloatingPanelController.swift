@@ -305,7 +305,7 @@ open class FloatingPanelController: UIViewController {
         if let layout = delegate?.floatingPanel?(self, layoutFor: traitCollection) {
             initialLayout = layout
         } else {
-            initialLayout = FloatingPanelDefaultLayout()
+            initialLayout = FloatingPanelBottomLayout()
         }
         let initialBehavior = FloatingPanelDefaultBehavior()
 

@@ -186,7 +186,7 @@ public extension FloatingPanelIntrinsicLayoutAnchor {
 }
 
 @objcMembers
-open class FloatingPanelDefaultLayout: NSObject, FloatingPanelLayout {
+open class FloatingPanelBottomLayout: NSObject, FloatingPanelLayout {
     public override init() {
         super.init()
     }
@@ -227,7 +227,7 @@ class FloatingPanelLayoutAdapter {
     weak var vc: FloatingPanelController!
     private weak var surfaceView: FloatingPanelSurfaceView!
     private weak var backdropView: FloatingPanelBackdropView!
-    private let defaultLayout = FloatingPanelDefaultLayout()
+    private let defaultLayout = FloatingPanelBottomLayout()
 
     var layout: FloatingPanelLayout {
         didSet {

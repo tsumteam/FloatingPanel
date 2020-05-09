@@ -388,7 +388,6 @@ open class FloatingPanelController: UIViewController {
     }
 
     // MARK:- Child view controller to consult
-    #if swift(>=4.2)
     open override var childForStatusBarStyle: UIViewController? {
         return contentViewController
     }
@@ -404,23 +403,6 @@ open class FloatingPanelController: UIViewController {
     open override var childForHomeIndicatorAutoHidden: UIViewController? {
         return contentViewController
     }
-    #else
-    open override var childViewControllerForStatusBarStyle: UIViewController? {
-        return contentViewController
-    }
-
-    open override var childViewControllerForStatusBarHidden: UIViewController? {
-        return contentViewController
-    }
-
-    open override func childViewControllerForScreenEdgesDeferringSystemGestures() -> UIViewController? {
-        return contentViewController
-    }
-
-    open override func childViewControllerForHomeIndicatorAutoHidden() -> UIViewController? {
-        return contentViewController
-    }
-    #endif
 
     // MARK:- Privates
 
@@ -538,11 +520,7 @@ open class FloatingPanelController: UIViewController {
             parent.view.insertSubview(self.view, at: viewIndex)
         }
 
-        #if swift(>=4.2)
         parent.addChild(self)
-        #else
-        parent.addChildViewController(self)
-        #endif
 
         view.frame = parent.view.bounds // Needed for a correct safe area configuration
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -555,11 +533,7 @@ open class FloatingPanelController: UIViewController {
 
         show(animated: animated) { [weak self] in
             guard let `self` = self else { return }
-            #if swift(>=4.2)
             self.didMove(toParent: parent)
-            #else
-            self.didMove(toParentViewController: parent)
-            #endif
         }
     }
 
@@ -578,19 +552,12 @@ open class FloatingPanelController: UIViewController {
 
         hide(animated: animated) { [weak self] in
             guard let `self` = self else { return }
-            #if swift(>=4.2)
+
             self.willMove(toParent: nil)
-            #else
-            self.willMove(toParentViewController: nil)
-            #endif
 
             self.view.removeFromSuperview()
 
-            #if swift(>=4.2)
             self.removeFromParent()
-            #else
-            self.removeFromParentViewController()
-            #endif
 
             self.delegate?.floatingPanelDidRemove?(self)
             completion?()
@@ -611,36 +578,18 @@ open class FloatingPanelController: UIViewController {
     /// Sets the view controller responsible for the content portion of the floating panel.
     public func set(contentViewController: UIViewController?) {
         if let vc = _contentViewController {
-            #if swift(>=4.2)
             vc.willMove(toParent: nil)
-            #else
-            vc.willMove(toParentViewController: nil)
-            #endif
-
             vc.view.removeFromSuperview()
-
-            #if swift(>=4.2)
             vc.removeFromParent()
-            #else
-            vc.removeFromParentViewController()
-            #endif
         }
 
         if let vc = contentViewController {
-            #if swift(>=4.2)
             addChild(vc)
-            #else
-            addChildViewController(vc)
-            #endif
 
             let surfaceView = floatingPanel.surfaceView
             surfaceView.set(contentView: vc.view)
 
-            #if swift(>=4.2)
             vc.didMove(toParent: self)
-            #else
-            vc.didMove(toParentViewController: self)
-            #endif
         }
 
         _contentViewController = contentViewController
@@ -666,15 +615,9 @@ open class FloatingPanelController: UIViewController {
             if #available(iOS 11.0, *) {
                 scrollView.contentInsetAdjustmentBehavior = .never
             } else {
-                #if swift(>=4.2)
                 children.forEach { (vc) in
                     vc.automaticallyAdjustsScrollViewInsets = false
                 }
-                #else
-                childViewControllers.forEach { (vc) in
-                    vc.automaticallyAdjustsScrollViewInsets = false
-                }
-                #endif
             }
         default:
             break

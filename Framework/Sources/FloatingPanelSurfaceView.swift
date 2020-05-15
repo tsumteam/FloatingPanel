@@ -120,7 +120,11 @@ public class FloatingPanelSurfaceView: UIView {
     /// content view.
     public let containerView: UIView = UIView()
 
-    var containerOverflow: CGFloat = 0.0 // Must not call setNeedsLayout()
+    var containerOverflow: CGFloat = 0.0 { // Must not call setNeedsLayout()
+        didSet {
+            setNeedsUpdateConstraints()
+        }
+    }
 
     var anchorPosition: FloatingPanelPosition = .bottom {
         didSet {

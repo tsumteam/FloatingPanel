@@ -231,7 +231,7 @@ class FloatingPanelLayoutAdapter {
 
     var layout: FloatingPanelLayout {
         didSet {
-            surfaceView.position = layout.anchorPosition
+            surfaceView.anchorPosition = layout.anchorPosition
         }
     }
 
@@ -623,7 +623,7 @@ class FloatingPanelLayoutAdapter {
         }
         NSLayoutConstraint.activate(constraint: heightConstraint)
 
-        surfaceView.bottomOverflow = vc.view.bounds.height
+        surfaceView.containerOverflow = vc.view.bounds.height
     }
 
     func updateInteractiveEdgeConstraint(diff: CGFloat, overflow: Bool, with behavior: FloatingPanelBehavior) {

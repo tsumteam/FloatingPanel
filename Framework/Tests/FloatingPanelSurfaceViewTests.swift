@@ -16,8 +16,8 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
         XCTAssert(surface.contentView == nil)
         surface.layoutIfNeeded()
         XCTAssert(surface.grabber.frame.minY == 6.0)
-        XCTAssert(surface.grabber.frame.width == surface.grabberHandleWidth)
-        XCTAssert(surface.grabber.frame.height == surface.grabberHandleHeight)
+        XCTAssert(surface.grabber.frame.width == surface.grabberSize.width)
+        XCTAssert(surface.grabber.frame.height == surface.grabberSize.height)
         surface.backgroundColor = .red
         surface.layoutIfNeeded()
         XCTAssert(surface.backgroundColor == surface.containerView.backgroundColor)
@@ -30,7 +30,7 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
             surface.layoutIfNeeded()
 
             let height = surface.bounds.height * 2
-            surface.bottomOverflow = height
+            surface.containerOverflow = height
             surface.setNeedsLayout()
             surface.layoutIfNeeded()
             XCTAssertEqual(surface.containerView.frame, CGRect(x: 0.0, y: 0.0, width: 320.0, height: 480.0 * 3))
@@ -38,12 +38,12 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
 
         XCTContext.runActivity(named: "Top sheet") { _ in
             let surface = FloatingPanelSurfaceView(frame: CGRect(x: 0.0, y: 0.0, width: 320.0, height: 480.0))
-            surface.position = .top
+            surface.anchorPosition = .top
             XCTAssertNil(surface.contentView)
             surface.layoutIfNeeded()
 
             let height = surface.bounds.height * 2
-            surface.bottomOverflow = height
+            surface.containerOverflow = height
             surface.setNeedsLayout()
             surface.layoutIfNeeded()
             XCTAssertEqual(surface.containerView.frame, CGRect(x: 0.0, y: -height, width: 320.0, height: 480.0 * 3))
@@ -59,7 +59,7 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
             surface.set(contentView: contentView)
 
             let height = surface.bounds.height * 2
-            surface.bottomOverflow = height
+            surface.containerOverflow = height
             surface.setNeedsLayout()
             surface.layoutIfNeeded()
             XCTAssertEqual(surface.contentView.frame, surface.bounds)
@@ -67,14 +67,14 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
 
         XCTContext.runActivity(named: "Top sheet") { _ in
             let surface = FloatingPanelSurfaceView(frame: CGRect(x: 0.0, y: 0.0, width: 320.0, height: 480.0))
-            surface.position = .top
+            surface.anchorPosition = .top
             surface.layoutIfNeeded()
 
             let contentView = UIView()
             surface.set(contentView: contentView)
 
             let height = surface.bounds.height * 2
-            surface.bottomOverflow = height
+            surface.containerOverflow = height
             surface.setNeedsLayout()
             surface.layoutIfNeeded()
             XCTAssertEqual(surface.containerView.frame, CGRect(x: 0.0, y: -height, width: 320.0, height: 480.0 * 3))
@@ -91,37 +91,36 @@ class FloatingPanelSurfaceViewTests: XCTestCase {
             surface.layoutIfNeeded()
 
             XCTAssertEqual(surface.grabber.frame.minY,  6.0)
-            XCTAssertEqual(surface.grabber.frame.width, surface.grabberHandleWidth)
-            XCTAssertEqual(surface.grabber.frame.height, surface.grabberHandleHeight)
+            XCTAssertEqual(surface.grabber.frame.width, surface.grabberSize.width)
+            XCTAssertEqual(surface.grabber.frame.height, surface.grabberSize.height)
 
-            surface.grabberPaddingFromEdge = 10.0
-            surface.grabberHandleWidth = 44.0
-            surface.grabberHandleHeight = 12.0
+            surface.grabberEdgePadding = 10.0
+            surface.grabberSize = CGSize(width: 44.0, height: 12.0)
             surface.setNeedsLayout()
             surface.layoutIfNeeded()
-            XCTAssertEqual(surface.grabber.frame.minY,  surface.grabberPaddingFromEdge)
-            XCTAssertEqual(surface.grabber.frame.width, surface.grabberHandleWidth)
-            XCTAssertEqual(surface.grabber.frame.height, surface.grabberHandleHeight)
+            XCTAssertEqual(surface.grabber.frame.minY,  surface.grabberEdgePadding)
+            XCTAssertEqual(surface.grabber.frame.width, surface.grabberSize.width)
+            XCTAssertEqual(surface.grabber.frame.height, surface.grabberSize.height)
         }
 
         XCTContext.runActivity(named: "Top sheet") { _ in
             let surface = FloatingPanelSurfaceView(frame: CGRect(x: 0.0, y: 0.0, width: 320.0, height: 480.0))
-            surface.position = .top
+            surface.anchorPosition = .top
             XCTAssertNil(surface.contentView)
             surface.layoutIfNeeded()
 
             XCTAssertEqual(surface.grabber.frame.maxY, (surface.bounds.maxY - 6.0))
-            XCTAssertEqual(surface.grabber.frame.width, surface.grabberHandleWidth)
-            XCTAssertEqual(surface.grabber.frame.height, surface.grabberHandleHeight)
+            XCTAssertEqual(surface.grabber.frame.width, surface.grabberSize.width)
+            XCTAssertEqual(surface.grabber.frame.height, surface.grabberSize.height)
 
-            surface.grabberPaddingFromEdge = 10.0
+            surface.grabberEdgePadding = 10.0
             surface.setNeedsLayout()
             surface.layoutIfNeeded()
-            XCTAssertEqual(surface.grabber.frame.maxY,  surface.bounds.maxY - surface.grabberPaddingFromEdge)
+            XCTAssertEqual(surface.grabber.frame.maxY,  surface.bounds.maxY - surface.grabberEdgePadding)
         }
     }
 
-    func test_surfaceView_containerMargins() {
+    func test_surfaceView_contentMargins() {
         let surface = FloatingPanelSurfaceView(frame: CGRect(x: 0.0, y: 0.0, width: 320.0, height: 480.0))
         surface.layoutIfNeeded()
         XCTAssertEqual(surface.containerView.frame, surface.bounds)

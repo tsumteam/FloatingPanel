@@ -289,7 +289,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
     }
 
     var grabberAreaFrame: CGRect {
-        return surfaceView.grabberAreaFrame
+        return surfaceView.grabbableAreaFrame
     }
 
     // MARK: - Gesture handling

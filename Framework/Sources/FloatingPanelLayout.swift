@@ -19,31 +19,31 @@ import UIKit
      */
 }
 
-@objc public enum FloatingPanelDirectionalEdge: Int {
+@objc public enum FloatingPanelReferenceEdge: Int {
     case auto
     case top
-    case leading
+    case left
     case bottom
-    case trailing
+    case right
 }
 
 @objc public protocol FloatingPanelLayoutAnchoring {
     var referenceGuide: FloatingPanelLayoutReferenceGuide { get }
-    var referenceEdge: FloatingPanelDirectionalEdge { get }
+    var referenceEdge: FloatingPanelReferenceEdge { get }
     func layoutConstraints(_ fpc: FloatingPanelController, for position: FloatingPanelPosition) -> [NSLayoutConstraint]
 }
 
 @objc final public class FloatingPanelLayoutAnchor: NSObject, FloatingPanelLayoutAnchoring /*, NSCopying */ {
     public static let hidden: FloatingPanelLayoutAnchor = FloatingPanelLayoutAnchor(absoluteInset: 0.0, edge: .auto, referenceGuide: .superview)
 
-    @objc public init(absoluteInset: CGFloat, edge: FloatingPanelDirectionalEdge, referenceGuide: FloatingPanelLayoutReferenceGuide) {
+    @objc public init(absoluteInset: CGFloat, edge: FloatingPanelReferenceEdge, referenceGuide: FloatingPanelLayoutReferenceGuide) {
         self.inset = absoluteInset
         self.referenceGuide = referenceGuide
         self.referenceEdge = edge
         self.isAbsolute = true
     }
 
-    @objc public init(fractionalInset: CGFloat, edge: FloatingPanelDirectionalEdge, referenceGuide: FloatingPanelLayoutReferenceGuide) {
+    @objc public init(fractionalInset: CGFloat, edge: FloatingPanelReferenceEdge, referenceGuide: FloatingPanelLayoutReferenceGuide) {
         self.inset = fractionalInset
         self.referenceGuide = referenceGuide
         self.referenceEdge = edge
@@ -52,7 +52,7 @@ import UIKit
     fileprivate let inset: CGFloat
     fileprivate let isAbsolute: Bool
     @objc public let referenceGuide: FloatingPanelLayoutReferenceGuide
-    @objc public let referenceEdge: FloatingPanelDirectionalEdge
+    @objc public let referenceEdge: FloatingPanelReferenceEdge
 }
 
 public extension FloatingPanelLayoutAnchor {
@@ -133,7 +133,7 @@ public extension FloatingPanelLayoutAnchor {
     fileprivate let offset: CGFloat
     fileprivate let isAbsolute: Bool
     @objc public let referenceGuide: FloatingPanelLayoutReferenceGuide
-    @objc public let referenceEdge: FloatingPanelDirectionalEdge
+    @objc public let referenceEdge: FloatingPanelReferenceEdge
 
 }
 

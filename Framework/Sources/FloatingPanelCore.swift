@@ -832,7 +832,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         log.debug("targetPosition -- currentY = \(currentY), velocity = \(velocity.y)")
 
         guard let vc = viewcontroller else { return state }
-        let sortedPositions = layoutAdapter.sortedDirectionalPositions
+        let sortedPositions = layoutAdapter.sortedDirectionalStates
 
         guard sortedPositions.count > 1 else {
             return state

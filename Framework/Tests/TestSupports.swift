@@ -30,6 +30,10 @@ class FloatingPanelTestDelegate: FloatingPanelControllerDelegate {
 }
 
 class FloatingPanelTestLayout: FloatingPanelLayout {
+    let fullInset: CGFloat = 20.0
+    let halfInset: CGFloat = 250.0
+    let tipInset: CGFloat = 60.0
+
     var initialState: FloatingPanelState {
         return .half
     }
@@ -41,14 +45,18 @@ class FloatingPanelTestLayout: FloatingPanelLayout {
     }
     var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
         return [
-            .full: FloatingPanelLayoutAnchor(absoluteInset: 20.0, edge: .top, referenceGuide: referenceGuide),
-            .half: FloatingPanelLayoutAnchor(absoluteInset: 250.0, edge: .bottom, referenceGuide: referenceGuide),
-            .tip: FloatingPanelLayoutAnchor(absoluteInset: 60.0, edge: .bottom, referenceGuide: referenceGuide),
+            .full: FloatingPanelLayoutAnchor(absoluteInset: fullInset, edge: .top, referenceGuide: referenceGuide),
+            .half: FloatingPanelLayoutAnchor(absoluteInset: halfInset, edge: .bottom, referenceGuide: referenceGuide),
+            .tip: FloatingPanelLayoutAnchor(absoluteInset: tipInset, edge: .bottom, referenceGuide: referenceGuide),
         ]
     }
 }
 
 class FloatingPanelTop2BottomTestLayout: FloatingPanelLayout {
+    let fullInset: CGFloat = 0.0
+    let halfInset: CGFloat = 250.0
+    let tipInset: CGFloat = 60.0
+
     var initialState: FloatingPanelState {
         return .half
     }
@@ -60,9 +68,9 @@ class FloatingPanelTop2BottomTestLayout: FloatingPanelLayout {
     }
     var stateAnchors: [FloatingPanelState : FloatingPanelLayoutAnchoring] {
         return [
-            .full: FloatingPanelLayoutAnchor(absoluteInset: 0.0, edge: .bottom, referenceGuide: referenceGuide),
-            .half: FloatingPanelLayoutAnchor(absoluteInset: 250.0, edge: .top, referenceGuide: referenceGuide),
-            .tip: FloatingPanelLayoutAnchor(absoluteInset: 60.0, edge: .top, referenceGuide: referenceGuide),
+            .full: FloatingPanelLayoutAnchor(absoluteInset: fullInset, edge: .bottom, referenceGuide: referenceGuide),
+            .half: FloatingPanelLayoutAnchor(absoluteInset: halfInset, edge: .top, referenceGuide: referenceGuide),
+            .tip: FloatingPanelLayoutAnchor(absoluteInset: tipInset, edge: .top, referenceGuide: referenceGuide),
         ]
     }
 }

@@ -64,8 +64,9 @@ import UIKit
     /// title, for example.
     ///
     /// This method will not be called if the controller doesn't track any scroll view.
-    @objc optional
-    func floatingPanel(_ vc: FloatingPanelController, contentOffsetForPinning trackedScrollView: UIScrollView) -> CGPoint
+    @objc(floatingPanel:contentOffsetForPinningScrollView:)
+    optional
+    func floatingPanel(_ fpc: FloatingPanelController, contentOffsetForPinning trackingScrollView: UIScrollView) -> CGPoint
 }
 
 extension FloatingPanelState {

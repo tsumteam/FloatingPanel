@@ -189,12 +189,6 @@ public extension FloatingPanelIntrinsicLayoutAnchor {
     /// TODO: Write doc comment
     @objc var layoutAnchors: [FloatingPanelState: FloatingPanelLayoutAnchoring] { get }
 
-    /// Return the interaction buffer from the top/bottom-most position. Default is 6.0.
-    ///
-    /// - Important:
-    /// The specified bottom buffer is ignored when `FloatingPanelController.isRemovalInteractionEnabled` is set to true.
-    @objc optional func interactionBuffer(for edge: FloatingPanelPosition) -> CGFloat
-
     /// Returns X-axis and width layout constraints of the surface view of a floating panel.
     /// You must not include any Y-axis and height layout constraints of the surface view
     /// because their constraints will be configured by the floating panel controller.
@@ -223,10 +217,6 @@ open class FloatingPanelDefaultLayout: NSObject, FloatingPanelLayout {
             .tip: FloatingPanelLayoutAnchor(absoluteInset: 69.0, edge: .bottom, referenceGuide: .safeArea),
             //.hidden: FloatingPanelLayoutAnchor.hidden
         ]
-    }
-
-    open func interactionBuffer(for edge: FloatingPanelPosition) -> CGFloat {
-        return 6.0
     }
 
     open var position: FloatingPanelPosition {
@@ -276,16 +266,9 @@ class FloatingPanelLayoutAdapter {
     private var fitToBoundsConstraint: NSLayoutConstraint?
 
     private(set) var interactionEdgeConstraint: NSLayoutConstraint?
+    private(set) var animationEdgeConstraint: NSLayoutConstraint?
 
     private var heightConstraint: NSLayoutConstraint?
-
-    var topInteractionBuffer: CGFloat {
-        return layout.interactionBuffer?(for: .top) ?? defaultLayout.interactionBuffer(for: .top)
-    }
-
-    var bottomInteractionBuffer: CGFloat {
-        return layout.interactionBuffer?(for: .bottom) ?? defaultLayout.interactionBuffer(for: .bottom)
-    }
 
     var supportedPositions: Set<FloatingPanelState> {
         return Set(layout.layoutAnchors.keys)
@@ -340,14 +323,6 @@ class FloatingPanelLayoutAdapter {
 
     var bottomY: CGFloat {
         return positionY(for: bottomMostState)
-    }
-
-    var topMaxY: CGFloat {
-        return topY - (layout.interactionBuffer?(for: .top) ?? defaultLayout.interactionBuffer(for: .top))
-    }
-
-    var bottomMaxY: CGFloat {
-        return bottomY + (layout.interactionBuffer?(for: .bottom) ?? defaultLayout.interactionBuffer(for: .bottom))
     }
 
     var edgeMostY: CGFloat {
@@ -499,15 +474,6 @@ class FloatingPanelLayoutAdapter {
         }
     }
 
-    var offsetFromEdgeMostBuffer: CGFloat {
-        switch layout.position {
-        case .top:
-            return surfaceView.presentationFrame.maxY - bottomMaxY
-        case .bottom:
-            return topMaxY - surfaceView.presentationFrame.minY
-        }
-    }
-
     func edgeY(_ frame: CGRect) -> CGFloat {
         switch layout.position {
         case .top:
@@ -569,6 +535,8 @@ class FloatingPanelLayoutAdapter {
             return
         }
 
+        tearDownAnimationEdgeConstraint()
+
         NSLayoutConstraint.deactivate(fullConstraints + halfConstraints + tipConstraints + offConstraints)
 
         initialConst = edgeY(surfaceView.frame) + offset.y
@@ -597,6 +565,62 @@ class FloatingPanelLayoutAdapter {
             // from .begin to .end.
             startInteraction(at: state)
         }
+    }
+
+    func setUpAnimationEdgeConstraint(to state: FloatingPanelState) -> (NSLayoutConstraint, CGFloat) {
+        NSLayoutConstraint.deactivate(constraint: animationEdgeConstraint)
+
+        let anchor = layout.layoutAnchors[state] ?? FloatingPanelLayoutAnchor.hidden
+
+        NSLayoutConstraint.deactivate(fullConstraints + halfConstraints + tipConstraints + offConstraints)
+        NSLayoutConstraint.deactivate(constraint: interactionEdgeConstraint)
+        interactionEdgeConstraint = nil
+
+        let animationConstraint: NSLayoutConstraint
+        var target = positionY(for: state)
+        switch layout.position {
+        case .top:
+            if anchor.referenceGuide == .safeArea {
+                if anchor.referenceEdge == .bottom {
+                    let baseHeight = vc.view.bounds.height - safeAreaInsets.bottom
+                    target = -(baseHeight - target)
+                    animationConstraint = surfaceView.bottomAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.bottomAnchor,
+                                                                              constant: -(baseHeight - edgeY(surfaceView.frame)))
+                } else {
+                    animationConstraint = surfaceView.bottomAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.topAnchor,
+                                                                           constant: edgeY(surfaceView.frame) - safeAreaInsets.top)
+                    target -= safeAreaInsets.top
+                }
+            } else {
+                animationConstraint = surfaceView.bottomAnchor.constraint(equalTo: vc.view.topAnchor,
+                                                                          constant: edgeY(surfaceView.frame))
+            }
+        case .bottom:
+            if anchor.referenceGuide == .safeArea {
+                if anchor.referenceEdge == .bottom {
+                    let baseHeight = vc.view.bounds.height - safeAreaInsets.bottom
+                    target = -(baseHeight - target)
+                    animationConstraint = surfaceView.topAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.bottomAnchor,
+                                                                           constant: -(baseHeight - edgeY(surfaceView.frame)))
+                } else {
+                    animationConstraint = surfaceView.topAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.topAnchor,
+                                                                           constant: edgeY(surfaceView.frame) - safeAreaInsets.top)
+                    target -= safeAreaInsets.top
+                }
+            } else {
+                animationConstraint = surfaceView.topAnchor.constraint(equalTo: vc.view.topAnchor,
+                                                                       constant: edgeY(surfaceView.frame))
+            }
+        }
+
+        NSLayoutConstraint.activate([animationConstraint])
+        self.animationEdgeConstraint = animationConstraint
+        return (animationConstraint, target)
+    }
+
+    private func tearDownAnimationEdgeConstraint() {
+        NSLayoutConstraint.deactivate(constraint: animationEdgeConstraint)
+        animationEdgeConstraint = nil
     }
 
     // The method is separated from prepareLayout(to:) for the rotation support
@@ -691,6 +715,8 @@ class FloatingPanelLayoutAdapter {
         // Must deactivate `interactiveTopConstraint` here
         NSLayoutConstraint.deactivate(constraint: self.interactionEdgeConstraint)
         self.interactionEdgeConstraint = nil
+
+        tearDownAnimationEdgeConstraint()
 
         NSLayoutConstraint.activate(fixedConstraints)
 

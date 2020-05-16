@@ -36,6 +36,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
     var isRemovalInteractionEnabled: Bool = false
 
     fileprivate var animator: UIViewPropertyAnimator?
+    fileprivate var moveAnimator: NumericSpringAnimator?
 
     private var initialFrame: CGRect = .zero
     private var initialTranslationY: CGFloat = 0
@@ -103,15 +104,31 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         }
         tearDownActiveInteraction()
 
+        interruptAnimationIfNeeded()
+
         if animated {
+            func updateScrollView() {
+                if self.state == self.layoutAdapter.edgeMostState, abs(self.layoutAdapter.offsetFromEdgeMost) <= 1.0 {
+                    self.unlockScrollView()
+                } else {
+                    self.lockScrollView()
+                }
+            }
+
             let animator: UIViewPropertyAnimator
             switch (from, to) {
             case (.hidden, let to):
-                animator = behaviorAdapter.behavior.addAnimator?(vc, to: to) ?? FloatingPanelDefaultBehavior().addAnimator(vc, to: to)
+                animator = vc.delegate?.floatingPanel?(vc, animatorForPresentingTo: to)
+                    ?? FloatingPanelDefaultBehavior().addPanelAnimator(vc, to: to)
             case (let from, .hidden):
-                animator = behaviorAdapter.behavior.removeAnimator?(vc, from: from) ?? FloatingPanelDefaultBehavior().removeAnimator(vc, from: from)
-            case (let from, let to):
-                animator = behaviorAdapter.behavior.moveAnimator?(vc, from: from, to: to) ?? FloatingPanelDefaultBehavior().moveAnimator(vc, from: from, to: to)
+                animator = vc.delegate?.floatingPanel?(vc, animatorForDismissingWith: .zero)
+                    ?? FloatingPanelDefaultBehavior().removePanelAnimator(vc, from: from, with: .zero)
+            default:
+                move(to: to, with: .zero) {
+                    updateScrollView()
+                    completion?()
+                }
+                return
             }
 
             animator.addAnimations { [weak self] in
@@ -123,11 +140,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             animator.addCompletion { [weak self] _ in
                 guard let `self` = self else { return }
                 self.animator = nil
-                if self.state == self.layoutAdapter.topMostState {
-                    self.unlockScrollView()
-                } else {
-                    self.lockScrollView()
-                }
+                updateScrollView()
                 completion?()
             }
             self.animator = animator
@@ -399,22 +412,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
                 return
             }
 
-            if let animator = self.animator {
-                guard 0 >= layoutAdapter.offsetFromEdgeMostBuffer else { return }
-                log.debug("panel animation(interruptible: \(animator.isInterruptible)) interrupted!!!")
-                if animator.isInterruptible {
-                    animator.stopAnimation(false)
-                    // A user can stop a panel at the nearest Y of a target position so this fine-tunes
-                    // the a small gap between the presentation layer frame and model layer frame
-                    // to unlock scroll view properly at finishAnimation(at:)
-                    if abs(layoutAdapter.offsetFromEdgeMost) <= 1.0 {
-                        surfaceView.frame.origin.y = layoutAdapter.edgeMostY
-                    }
-                    animator.finishAnimation(at: .current)
-                } else {
-                    self.endAnimation(false) // Must call it manually
-                }
-            }
+            interruptAnimationIfNeeded()
 
             if panGesture.state == .began {
                 panningBegan(at: location)
@@ -447,6 +445,30 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             }
         default:
             return
+        }
+    }
+
+    private func interruptAnimationIfNeeded() {
+        if let animator = self.moveAnimator, animator.isRunning {
+            log.debug("the deceleration animator interrupted!!!")
+            animator.stopAnimation(true)
+            endDeceleration(false)
+        }
+        if let animator = self.animator {
+            guard 0 >= layoutAdapter.offsetFromEdgeMost else { return }
+            log.debug("a panel animation(interruptible: \(animator.isInterruptible)) interrupted!!!")
+            if animator.isInterruptible {
+                animator.stopAnimation(false)
+                // A user can stop a panel at the nearest Y of a target position so this fine-tunes
+                // the a small gap between the presentation layer frame and model layer frame
+                // to unlock scroll view properly at finishAnimation(at:)
+                if abs(layoutAdapter.offsetFromEdgeMost) <= 1.0 {
+                    surfaceView.frame.origin.y = layoutAdapter.edgeMostY
+                }
+                animator.finishAnimation(at: .current)
+            } else {
+                animator.stopAnimation(true)
+            }
         }
     }
 
@@ -631,7 +653,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             scrollView.isScrollEnabled = false
         }
 
-        startAnimation(to: targetPosition, at: distance, with: velocity)
+        startDeceleration(to: targetPosition, with: velocity)
 
         // Workaround: Reset `self.scrollView.isScrollEnabled`
         if let scrollView = scrollView, targetPosition != .full,
@@ -740,48 +762,49 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         panGestureRecognizer.isEnabled = true
     }
 
-    private func startAnimation(to targetPosition: FloatingPanelState, at distance: CGFloat, with velocity: CGPoint) {
-        log.debug("startAnimation to \(targetPosition) -- distance = \(distance), velocity = \(velocity.y)")
+    private func startDeceleration(to targetPosition: FloatingPanelState, with velocity: CGPoint) {
+        log.debug("startAnimation to \(targetPosition) -- velocity = \(velocity.y)")
         guard let vc = viewcontroller else { return }
 
         isDecelerating = true
-
         vc.delegate?.floatingPanelWillBeginDecelerating?(vc)
-
-        let velocityVector = (distance != 0) ? CGVector(dx: 0, dy: abs(velocity.y)/distance) : .zero
-        let animator = behaviorAdapter.behavior.interactionAnimator?(vc, to: targetPosition, with: velocityVector) ?? FloatingPanelDefaultBehavior().interactionAnimator(vc, to: targetPosition, with: velocityVector)
-        animator.addAnimations { [weak self] in
-            guard let `self` = self, let vc = self.viewcontroller else { return }
-            self.state = targetPosition
-            if animator.isInterruptible {
-                switch vc.contentMode {
-                case .fitToBounds:
-                    UIView.performWithLinear(startTime: 0.0, relativeDuration: 0.75) {
-                        self.layoutAdapter.activateFixedLayout()
-                        self.surfaceView.superview!.layoutIfNeeded()
-                    }
-                case .static:
-                    self.layoutAdapter.activateFixedLayout()
-                }
-            } else {
-                self.layoutAdapter.activateFixedLayout()
-            }
-            self.layoutAdapter.activateInteractiveLayout(of: targetPosition)
+        move(to: targetPosition, with: velocity) {
+            self.endDeceleration(true)
         }
-        animator.addCompletion { [weak self] pos in
-            // Prevent calling `finishAnimation(at:)` by the old animator whose `isInterruptive` is false
-            // when a new animator has been started after the old one is interrupted.
-            guard let `self` = self, self.animator == animator else { return }
-            log.debug("finishAnimation to \(targetPosition)")
-            self.endAnimation(pos == .end)
-        }
-        self.animator = animator
-        animator.startAnimation()
     }
 
-    private func endAnimation(_ finished: Bool) {
+    private func move(to targetPosition: FloatingPanelState, with velocity: CGPoint = .zero, completion: @escaping (() -> Void)) {
+        guard let vc = viewcontroller else { return }
+        let decelerationRate = vc.behavior.springDecelerationRate ?? FloatingPanelDefaultBehavior().springDecelerationRate
+        let responseTime = vc.behavior.springResponseTime ?? FloatingPanelDefaultBehavior().springResponseTime
+
+        let (animationConstraint, target) = layoutAdapter.setUpAnimationEdgeConstraint(to: targetPosition)
+        let initialData = NumericSpringAnimator.Data(value: animationConstraint.constant, velocity: velocity.y)
+        moveAnimator = NumericSpringAnimator(
+            initialData: initialData,
+            target: target,
+            displayScale: surfaceView.traitCollection.displayScale,
+            decelerationRate: decelerationRate,
+            responseTime: responseTime,
+            update: { data in
+                animationConstraint.constant = data.value
+                let currentY = vc.surfaceEdgeLocation.y
+                let translation = CGPoint(x: 0, y: data.value - initialData.value)
+                self.backdropView.alpha = self.getBackdropAlpha(at: currentY, with: translation)
+                vc.view.layoutIfNeeded()
+                vc.delegate?.floatingPanelDidMove?(vc)
+        },
+            completion: {
+                self.layoutAdapter.activateLayout(for: targetPosition, forceLayout: true)
+                completion()
+        })
+        moveAnimator?.startAnimation()
+        state = targetPosition
+    }
+
+    private func endDeceleration(_ finished: Bool) {
         self.isDecelerating = false
-        self.animator = nil
+        self.moveAnimator = nil
 
         if let vc = viewcontroller {
             vc.delegate?.floatingPanelDidEndDecelerating?(vc)
@@ -799,12 +822,6 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         }
     }
 
-    private func distance(to targetPosition: FloatingPanelState) -> CGFloat {
-        let currentY = surfaceEdgeY
-        let targetY = layoutAdapter.positionY(for: targetPosition)
-        return CGFloat(abs(currentY - targetY))
-    }
-
     // Distance travelled after decelerating to zero velocity at a constant rate.
     // Refer to the slides p176 of [Designing Fluid Interfaces](https://developer.apple.com/videos/play/wwdc2018/803/)
     private func project(initialVelocity: CGFloat, decelerationRate: CGFloat) -> CGFloat {
@@ -812,6 +829,8 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
     }
 
     func targetPosition(from currentY: CGFloat, with velocity: CGPoint) -> (FloatingPanelState) {
+        log.debug("targetPosition -- currentY = \(currentY), velocity = \(velocity.y)")
+
         guard let vc = viewcontroller else { return state }
         let sortedPositions = layoutAdapter.sortedDirectionalPositions
 
@@ -820,7 +839,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         }
 
         // Projection
-        let decelerationRate = behaviorAdapter.behavior.momentumProjectionRate?(vc) ?? FloatingPanelDefaultBehavior().momentumProjectionRate(vc)
+        let decelerationRate = behaviorAdapter.behavior.momentumProjectionRate ?? FloatingPanelDefaultBehavior().momentumProjectionRate
         let baseY = abs(layoutAdapter.positionY(for: layoutAdapter.bottomMostState) - layoutAdapter.positionY(for: layoutAdapter.topMostState))
         let vecY = velocity.y / baseY
         var pY = project(initialVelocity: vecY, decelerationRate: decelerationRate) * baseY + currentY
@@ -836,7 +855,8 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         let (lowerPos, upperPos) = (segment.lower ?? sortedPositions.first!, segment.upper ?? sortedPositions.last!)
         (fromPos, toPos) = forwardY ? (lowerPos, upperPos) : (upperPos, lowerPos)
 
-        if behaviorAdapter.behavior.shouldProjectMomentum?(vc, for: toPos) ?? FloatingPanelDefaultBehavior().shouldProjectMomentum(vc, for: toPos) == false {
+        if (behaviorAdapter.behavior.shouldProjectMomentum?(vc, to: toPos) ?? false) == false {
+            log.debug("targetPosition -- negate projection: distance = \(distance)")
             let segment = layoutAdapter.segument(at: currentY, forward: forwardY)
             var (lowerPos, upperPos) = (segment.lower ?? sortedPositions.first!, segment.upper ?? sortedPositions.last!)
             // Equate the segment out of {top,bottom} most state to the {top,bottom} most segment
@@ -922,7 +942,7 @@ class FloatingPanelPanGestureRecognizer: UIPanGestureRecognizer {
     fileprivate weak var floatingPanel: FloatingPanelCore?
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesBegan(touches, with: event)
-        if floatingPanel?.animator != nil {
+        if floatingPanel?.animator != nil || floatingPanel?.moveAnimator != nil {
             self.state = .began
         }
     }
@@ -941,4 +961,130 @@ class FloatingPanelPanGestureRecognizer: UIPanGestureRecognizer {
             super.delegate = newValue
         }
     }
+}
+
+class NumericSpringAnimator: NSObject {
+    struct Data {
+        let value: CGFloat
+        let velocity: CGFloat
+    }
+
+    private class UnfairLock {
+        var unfairLock = os_unfair_lock()
+        func lock() {
+            os_unfair_lock_lock(&unfairLock);
+        }
+        func tryLock() -> Bool {
+            return os_unfair_lock_trylock(&unfairLock);
+        }
+        func unlock() {
+            os_unfair_lock_unlock(&unfairLock);
+        }
+    }
+
+    var isRunning = false
+
+    private var lock = UnfairLock()
+
+    private lazy var displayLink = CADisplayLink(target: self, selector: #selector(update(_:)))
+
+    private var data: Data
+
+    private let target: CGFloat
+    private let displayScale: CGFloat
+    private let zeta: CGFloat
+    private let omega: CGFloat
+
+    private let update: ((_ data: Data) -> Void)
+    private let completion: (() -> Void)
+
+    init(initialData: Data,
+         target: CGFloat,
+         displayScale: CGFloat,
+         decelerationRate: CGFloat,
+         responseTime: CGFloat,
+         update: @escaping ((_ data: Data) -> Void),
+         completion: @escaping (() -> Void)) {
+
+        self.data = initialData
+        self.target = target
+        self.displayScale = displayScale
+
+        let frequency = 1 / responseTime // oscillation frequency
+        let duration: CGFloat = 0.001 // millisecond
+        self.zeta = abs(initialData.velocity) > 300 ? CoreGraphics.log(decelerationRate) / (-2.0 * .pi * frequency * duration)  : 1.0
+        self.omega = 2.0 * .pi * frequency
+
+        self.update = update
+        self.completion = completion
+    }
+
+    @discardableResult
+    func startAnimation() -> Bool{
+        lock.lock()
+        defer { lock.unlock() }
+
+        if isRunning {
+            return false
+        }
+        log.debug("startAnimation --", displayLink)
+        isRunning = true
+        displayLink.add(to: RunLoop.main, forMode: .common)
+        return true
+    }
+
+    func stopAnimation(_ withoutFinishing: Bool) {
+        let locked = lock.tryLock()
+        defer {
+            if locked { lock.unlock() }
+        }
+
+        log.debug("stopAnimation --", displayLink)
+        isRunning = false
+        displayLink.invalidate()
+        if withoutFinishing {
+            return
+        }
+        completion()
+    }
+
+    var count: Int = 0
+    @objc
+    func update(_ displayLink: CADisplayLink) {
+        lock.lock()
+        defer { lock.unlock() }
+
+        var cur = data.value
+        let pre = cur
+        var velocity = data.velocity
+        spring(x: &cur,
+               v: &velocity,
+               xt: target,
+               zeta: zeta,
+               omega: omega,
+               h: CGFloat(displayLink.duration))
+        data = Data(value: cur, velocity: velocity)
+        update(data)
+        if abs(target - data.value) <= (1 / displayScale),
+           abs(pre - data.value) / (1 / displayScale) <= 1 {
+            stopAnimation(false)
+        }
+    }
+    /**
+     - Parameters:
+         - x: value
+         - v: velocity
+         - xt: target value
+         - zeta: damping ratio
+         - omega: angular frequency
+         - h: time step
+      */
+     private func spring(x: inout CGFloat, v: inout CGFloat, xt: CGFloat, zeta: CGFloat, omega: CGFloat, h: CGFloat) {
+        let f = 1.0 + 2.0 * h * zeta * omega
+        let h2 = pow(h, 2)
+        let o2 = pow(omega, 2)
+        let det = f + h2 * o2
+        x = (f * x + h * v + h2 * o2 * xt) / det
+        v = (v + h * o2 * (xt - x)) / det
+     }
 }

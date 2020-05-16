@@ -564,8 +564,8 @@ class FloatingPanelTests: XCTestCase {
     func test_targetPosition_3positionsAllProjection() {
         let delegate = FloatingPanelTestDelegate()
         let fpc = FloatingPanelController(delegate: delegate)
-        fpc.behavior = FloatingPanelProjectionalBehavior()
         fpc.layout = FloatingPanelLayout3Positions()
+        fpc.behavior = FloatingPanelProjectableBehavior()
 
         fpc.showForTest()
 
@@ -659,7 +659,7 @@ class FloatingPanelTests: XCTestCase {
         fpc.layout = FloatingPanelLayout3Positions()
 
         fpc.showForTest()
-        fpc.behavior = FloatingPanelProjectionalBehavior()
+        fpc.behavior = FloatingPanelProjectableBehavior()
         XCTAssertEqual(fpc.state, .hidden)
 
         let halfPos = fpc.surfaceEdgeLocation(for: .half).y
@@ -709,11 +709,5 @@ private func assertTargetPosition(_ floatingPanel: FloatingPanelCore, with param
     params.forEach { (line, pos, velocity, result) in
         floatingPanel.surfaceView.frame.origin.y = pos
         XCTAssertEqual(floatingPanel.targetPosition(from: pos, with: velocity), result, line: line)
-    }
-}
-
-private class FloatingPanelProjectionalBehavior: FloatingPanelBehavior {
-    func shouldProjectMomentum(_ fpc: FloatingPanelController, for proposedTargetPosition: FloatingPanelState) -> Bool {
-        return true
     }
 }

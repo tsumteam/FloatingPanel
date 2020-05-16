@@ -138,28 +138,27 @@ class FloatingPanelLayoutTests: XCTestCase {
         let fullPos = fpc.surfaceEdgeLocation(for: .full).y
         let tipPos = fpc.surfaceEdgeLocation(for: .tip).y
 
-        var pre: CGFloat
         var next: CGFloat
-        pre = fpc.surfaceView.frame.minY
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, allowsTopBuffer: false, with: fpc.behavior)
-        next = fpc.surfaceView.frame.minY
-        XCTAssertEqual(next, pre)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, overflow: false, with: fpc.behavior)
         next = fpc.surfaceView.frame.minY
-        XCTAssertEqual(next, fullPos - FloatingPanelDefaultLayout().interactionBuffer(for: .top))
+        XCTAssertEqual(next, fullPos)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: 100.0, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: 100.0, overflow: true, with: fpc.behavior)
         next = fpc.surfaceView.frame.minY
         XCTAssertEqual(next, fullPos + 100.0)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: tipPos - fullPos, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: tipPos - fullPos, overflow: true, with: fpc.behavior)
         next = fpc.surfaceView.frame.minY
         XCTAssertEqual(next, tipPos)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: tipPos - fullPos + 100.0, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: tipPos - fullPos + 100.0, overflow: false, with: fpc.behavior)
         next = fpc.surfaceView.frame.minY
-        XCTAssertEqual(next, tipPos + FloatingPanelDefaultLayout().interactionBuffer(for: .bottom))
+        XCTAssertEqual(next, tipPos)
+
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: tipPos - fullPos + 100.0, overflow: true, with: fpc.behavior)
+        next = fpc.surfaceView.frame.minY
+        XCTAssertEqual(next, tipPos + 100.0)
 
         fpc.floatingPanel.layoutAdapter.endInteraction(at: fpc.state)
     }
@@ -175,7 +174,7 @@ class FloatingPanelLayoutTests: XCTestCase {
         fpc.floatingPanel.layoutAdapter.startInteraction(at: fpc.state)
         fpc.floatingPanel.layoutAdapter.startInteraction(at: fpc.state) // Should be ignore
 
-        XCTAssertEqual(fpc.floatingPanel.layoutAdapter.interactiveEdgeConstraint?.constant, 60.0)
+        XCTAssertEqual(fpc.floatingPanel.layoutAdapter.interactionEdgeConstraint?.constant, 60.0)
 
         let fullPos = fpc.surfaceEdgeLocation(for: .full).y
         let tipPos = fpc.surfaceEdgeLocation(for: .tip).y
@@ -183,25 +182,25 @@ class FloatingPanelLayoutTests: XCTestCase {
         var pre: CGFloat
         var next: CGFloat
         pre = fpc.surfaceView.frame.maxY
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, allowsTopBuffer: false, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, overflow: false, with: fpc.behavior)
         next = fpc.surfaceView.frame.maxY
         XCTAssertEqual(next, pre)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, allowsTopBuffer: true, with: fpc.behavior)
-        next = fpc.surfaceView.frame.maxY
-        XCTAssertEqual(next, tipPos - FloatingPanelDefaultLayout().interactionBuffer(for: .top))
-
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: 100.0, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: 100.0, overflow: true, with: fpc.behavior)
         next = fpc.surfaceView.frame.maxY
         XCTAssertEqual(next, tipPos + 100.0)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: fullPos - tipPos, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: fullPos - tipPos, overflow: true, with: fpc.behavior)
         next = fpc.surfaceView.frame.maxY
         XCTAssertEqual(next, fullPos)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: fullPos - tipPos + 100.0, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: fullPos - tipPos + 100, overflow: false, with: fpc.behavior)
         next = fpc.surfaceView.frame.maxY
-        XCTAssertEqual(next, fullPos + FloatingPanelDefaultLayout().interactionBuffer(for: .bottom))
+        XCTAssertEqual(next, fullPos)
+
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: fullPos - tipPos + 100, overflow: true, with: fpc.behavior)
+        next = fpc.surfaceView.frame.maxY
+        XCTAssertEqual(next, fullPos + 100.0)
 
         fpc.floatingPanel.layoutAdapter.endInteraction(at: fpc.state)
     }
@@ -226,31 +225,30 @@ class FloatingPanelLayoutTests: XCTestCase {
         let fullPos = fpc.surfaceEdgeLocation(for: .full).y
         let hiddenPos = fpc.surfaceEdgeLocation(for: .hidden).y
 
-        var pre: CGFloat
         var next: CGFloat
-        pre = fpc.surfaceView.frame.minY
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, allowsTopBuffer: false, with: fpc.behavior)
-        next = fpc.surfaceView.frame.minY
-        XCTAssertEqual(next, pre)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, overflow: false, with: fpc.behavior)
         next = fpc.surfaceView.frame.minY
-        XCTAssertEqual(next, fullPos - FloatingPanelDefaultLayout().interactionBuffer(for: .top))
+        XCTAssertEqual(next, fullPos)
 
-        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: hiddenPos - fullPos + 100.0, allowsTopBuffer: true, with: fpc.behavior)
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: -100.0, overflow: true, with: fpc.behavior)
         next = fpc.surfaceView.frame.minY
-        XCTAssertEqual(next, hiddenPos + FloatingPanelDefaultLayout().interactionBuffer(for: .bottom))
+        XCTAssertEqual(next, fullPos - 100.0)
+
+        fpc.floatingPanel.layoutAdapter.updateInteractiveEdgeConstraint(diff: hiddenPos - fullPos + 100.0, overflow: true, with: fpc.behavior)
+        next = fpc.surfaceView.frame.minY
+        XCTAssertEqual(next, hiddenPos + 100.0)
 
         fpc.floatingPanel.layoutAdapter.endInteraction(at: fpc.state)
     }
 
+    //TODO
     func test_updateInteractiveEdgeConstraintWithHidden_bottomEdge() {
         class MyFloatingPanelLayoutTop2Bottom: FloatingPanelTop2BottomTestLayout {
             var initialPosition: FloatingPanelState = .hidden
             let supportedPositions: Set<FloatingPanelState> = [.hidden, .full]
         }
         let delegate = FloatingPanelTestDelegate()
-        //TODO
     }
 
     func test_positionY() {

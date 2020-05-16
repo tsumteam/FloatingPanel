@@ -82,7 +82,8 @@ class FloatingPanelModalPresentTransition: NSObject, UIViewControllerAnimatedTra
             let fpc = transitionContext?.viewController(forKey: .to) as? FloatingPanelController
         else { fatalError()}
 
-        let animator = fpc.behavior.addAnimator?(fpc, to: fpc.layout.initialState) ?? FloatingPanelDefaultBehavior().addAnimator(fpc, to: fpc.layout.initialState)
+        let animator = fpc.delegate?.floatingPanel?(fpc, animatorForPresentingTo: fpc.layout.initialState)
+            ?? FloatingPanelDefaultBehavior().addPanelAnimator(fpc, to: fpc.layout.initialState)
         return TimeInterval(animator.duration)
     }
 
@@ -103,7 +104,8 @@ class FloatingPanelModalDismissTransition: NSObject, UIViewControllerAnimatedTra
             let fpc = transitionContext?.viewController(forKey: .from) as? FloatingPanelController
         else { fatalError()}
 
-        let animator = fpc.behavior.removeAnimator?(fpc, from: fpc.state) ?? FloatingPanelDefaultBehavior().removeAnimator(fpc, from: fpc.state)
+        let animator = fpc.delegate?.floatingPanel?(fpc, animatorForDismissingWith: .zero)
+            ?? FloatingPanelDefaultBehavior().removePanelAnimator(fpc, from: fpc.state, with: .zero)
         return TimeInterval(animator.duration)
     }
 

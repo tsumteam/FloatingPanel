@@ -20,8 +20,12 @@ extension FloatingPanelController {
 
 class FloatingPanelTestDelegate: FloatingPanelControllerDelegate {
     var position: FloatingPanelState = .hidden
+    var didMoveCallback: ((FloatingPanelController) -> Void)?
     func floatingPanelDidChangePosition(_ vc: FloatingPanelController) {
         position = vc.state
+    }
+    func floatingPanelDidMove(_ vc: FloatingPanelController) {
+        didMoveCallback?(vc)
     }
 }
 
@@ -60,5 +64,11 @@ class FloatingPanelTop2BottomTestLayout: FloatingPanelLayout {
             .half: FloatingPanelLayoutAnchor(absoluteInset: 250.0, edge: .top, referenceGuide: referenceGuide),
             .tip: FloatingPanelLayoutAnchor(absoluteInset: 60.0, edge: .top, referenceGuide: referenceGuide),
         ]
+    }
+}
+
+class FloatingPanelProjectableBehavior: FloatingPanelBehavior {
+    func shouldProjectMomentum(_ fpc: FloatingPanelController, to proposedTargetPosition: FloatingPanelState) -> Bool {
+        return true
     }
 }

@@ -81,20 +81,38 @@ class FloatingPanelControllerTests: XCTestCase {
         XCTAssertEqual(delegate.position, .hidden)
         XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .hidden).y)
 
-        fpc.move(to: .full, animated: true)
-        XCTAssertEqual(fpc.state, .full)
-        XCTAssertEqual(delegate.position, .full)
-        XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .full).y)
+        XCTContext.runActivity(named: "move to full(animated)") { act in
+            let exp = expectation(description: act.name)
+            fpc.move(to: .full, animated: true) {
+                XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .full).y)
+                exp.fulfill()
+            }
+            XCTAssertEqual(fpc.state, .full)
+            XCTAssertEqual(delegate.position, .full)
+            wait(for: [exp], timeout: 0.5)
+        }
 
-        fpc.move(to: .half, animated: true)
-        XCTAssertEqual(fpc.state, .half)
-        XCTAssertEqual(delegate.position, .half)
-        XCTAssertEqual(fpc.surfaceEdgeLocation, fpc.surfaceEdgeLocation(for: .half))
+        XCTContext.runActivity(named: "move to half(animated)") { act in
+            let exp = expectation(description: act.name)
+            fpc.move(to: .half, animated: true) {
+                XCTAssertEqual(fpc.surfaceEdgeLocation, fpc.surfaceEdgeLocation(for: .half))
+                exp.fulfill()
+            }
+            XCTAssertEqual(fpc.state, .half)
+            XCTAssertEqual(delegate.position, .half)
+            wait(for: [exp], timeout: 0.8)
+        }
 
-        fpc.move(to: .tip, animated: true)
-        XCTAssertEqual(fpc.state, .tip)
-        XCTAssertEqual(delegate.position, .tip)
-        XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .tip).y)
+        XCTContext.runActivity(named: "move to tip(animated)") { act in
+            let exp = expectation(description: act.name)
+            fpc.move(to: .tip, animated: true) {
+                XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .tip).y)
+                exp.fulfill()
+            }
+            XCTAssertEqual(fpc.state, .tip)
+            XCTAssertEqual(delegate.position, .tip)
+            wait(for: [exp], timeout: 0.8)
+        }
 
         fpc.move(to: .hidden, animated: true)
         XCTAssertEqual(fpc.state, .hidden)
@@ -136,20 +154,38 @@ class FloatingPanelControllerTests: XCTestCase {
         XCTAssertEqual(delegate.position, .hidden)
         XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .hidden).y)
 
-        fpc.move(to: .full, animated: true)
-        XCTAssertEqual(fpc.state, .full)
-        XCTAssertEqual(delegate.position, .full)
-        XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .full).y)
+        XCTContext.runActivity(named: "move to full(animated)") { act in
+            let exp = expectation(description: act.name)
+            fpc.move(to: .full, animated: true) {
+                XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .full).y)
+                exp.fulfill()
+            }
+            XCTAssertEqual(fpc.state, .full)
+            XCTAssertEqual(delegate.position, .full)
+            wait(for: [exp], timeout: 0.5)
+        }
 
-        fpc.move(to: .half, animated: true)
-        XCTAssertEqual(fpc.state, .half)
-        XCTAssertEqual(delegate.position, .half)
-        XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .half).y)
+        XCTContext.runActivity(named: "move to half(animated)") { act in
+            let exp = expectation(description: act.name)
+            fpc.move(to: .half, animated: true) {
+                XCTAssertEqual(fpc.surfaceEdgeLocation, fpc.surfaceEdgeLocation(for: .half))
+                exp.fulfill()
+            }
+            XCTAssertEqual(fpc.state, .half)
+            XCTAssertEqual(delegate.position, .half)
+            wait(for: [exp], timeout: 0.8)
+        }
 
-        fpc.move(to: .tip, animated: true)
-        XCTAssertEqual(fpc.state, .tip)
-        XCTAssertEqual(delegate.position, .tip)
-        XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .tip).y)
+        XCTContext.runActivity(named: "move to tip(animated)") { act in
+            let exp = expectation(description: act.name)
+            fpc.move(to: .tip, animated: true) {
+                XCTAssertEqual(fpc.surfaceEdgeLocation.y, fpc.surfaceEdgeLocation(for: .tip).y)
+                exp.fulfill()
+            }
+            XCTAssertEqual(fpc.state, .tip)
+            XCTAssertEqual(delegate.position, .tip)
+            wait(for: [exp], timeout: 0.8)
+        }
 
         fpc.move(to: .hidden, animated: true)
         XCTAssertEqual(fpc.state, .hidden)
@@ -171,6 +207,78 @@ class FloatingPanelControllerTests: XCTestCase {
         fpc.move(to: .full, animated: false)
         XCTAssertEqual(fpc.nearbyState, .full)
         XCTAssertEqual(fpc.surfaceView.frame.minY, fpc.surfaceEdgeLocation(for: .full).y)
+    }
+
+    func test_moveTo_didMoveDelegate() {
+        let delegate = FloatingPanelTestDelegate()
+        let fpc = FloatingPanelController(delegate: delegate)
+        XCTAssertEqual(delegate.position, .hidden)
+        fpc.showForTest()
+
+        XCTContext.runActivity(named: "move(to:animated:false") { act in
+            let exp = expectation(description: act.name)
+            exp.expectedFulfillmentCount = 1
+            var count = 0
+            delegate.didMoveCallback = { _ in
+                count += 1
+                exp.fulfill()
+            }
+            fpc.move(to: .full, animated: false)
+            wait(for: [exp], timeout: 1.0)
+
+            XCTAssertEqual(count, 1)
+        }
+
+        XCTContext.runActivity(named: "move(to:animated:true)") { act in
+            let exp = expectation(description: act.name)
+            exp.assertForOverFulfill = false
+            exp.expectedFulfillmentCount = 1
+            var count = 0
+            delegate.didMoveCallback = { _ in
+                count += 1
+            }
+            fpc.move(to: .half, animated: true) {
+                exp.fulfill()
+            }
+            wait(for: [exp], timeout: 1.0)
+
+            XCTAssertGreaterThan(count, 1)
+        }
+
+        XCTContext.runActivity(named: "move(to:animated:false) with animation") { act in
+            let exp = expectation(description: act.name)
+            exp.expectedFulfillmentCount = 1
+            var count = 0
+            delegate.didMoveCallback = { _ in
+                count += 1
+            }
+            UIView.animate(withDuration: 0.3) {
+                fpc.move(to: .full, animated: false) {
+                    exp.fulfill()
+                }
+            }
+            wait(for: [exp], timeout: 1.0)
+
+            XCTAssertEqual(count, 1)
+        }
+
+        XCTContext.runActivity(named: "move(to:animated:true) with animation") { act in
+            let exp = expectation(description: act.name)
+            exp.assertForOverFulfill = false
+            exp.expectedFulfillmentCount = 1
+            var count = 0
+            delegate.didMoveCallback = { _ in
+                count += 1
+            }
+            UIView.animate(withDuration: 0.3) {
+                fpc.move(to: .half, animated: true) {
+                    exp.fulfill()
+                }
+            }
+            wait(for: [exp], timeout: 1.0)
+
+            XCTAssertGreaterThan(count, 1)
+        }
     }
 
     func test_originSurfaceY() {

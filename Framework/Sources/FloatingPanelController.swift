@@ -201,6 +201,11 @@ open class FloatingPanelController: UIViewController {
         return floatingPanel.state
     }
 
+    @objc
+    public var isDecelerating: Bool {
+        return floatingPanel.isDecelerating
+    }
+
     /// The layout object managed by the controller
     @objc
     public var layout: FloatingPanelLayout {

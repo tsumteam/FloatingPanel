@@ -24,13 +24,14 @@ class ViewController: UIViewController, FloatingPanelControllerDelegate {
         // Initialize FloatingPanelController
         fpc = FloatingPanelController()
         fpc.delegate = self
+        fpc.behavior = FloatingPanelStocksBehavior()
 
         // Initialize FloatingPanelController and add the view
         fpc.surfaceView.backgroundColor = UIColor(displayP3Red: 30.0/255.0, green: 30.0/255.0, blue: 30.0/255.0, alpha: 1.0)
-        fpc.surfaceView.cornerRadius = 24.0
-        fpc.surfaceView.shadowHidden = true
-        fpc.surfaceView.borderWidth = 1.0 / traitCollection.displayScale
-        fpc.surfaceView.borderColor = UIColor.black.withAlphaComponent(0.2)
+        fpc.surfaceView.appearance.cornerRadius = 24.0
+        fpc.surfaceView.appearance.shadows = []
+        fpc.surfaceView.appearance.borderWidth = 1.0 / traitCollection.displayScale
+        fpc.surfaceView.appearance.borderColor = UIColor.black.withAlphaComponent(0.2)
 
         newsVC = storyboard?.instantiateViewController(withIdentifier: "News") as? NewsViewController
 
@@ -38,7 +39,7 @@ class ViewController: UIViewController, FloatingPanelControllerDelegate {
         fpc.set(contentViewController: newsVC)
         fpc.track(scrollView: newsVC.scrollView)
 
-        fpc.addPanel(toParent: self, belowView: bottomToolView, animated: false)
+        fpc.addPanel(toParent: self, at: view.subviews.firstIndex(of: bottomToolView) ?? -1 , animated: false)
 
         topBannerView.frame = .zero
         topBannerView.alpha = 0.0
@@ -64,16 +65,21 @@ class ViewController: UIViewController, FloatingPanelControllerDelegate {
 
     // MARK: FloatingPanelControllerDelegate
 
-    func floatingPanel(_ vc: FloatingPanelController, layoutFor newCollection: UITraitCollection) -> FloatingPanelLayout? {
+    func floatingPanel(_ vc: FloatingPanelController, layoutFor newCollection: UITraitCollection) -> FloatingPanelLayout {
         return FloatingPanelStocksLayout()
     }
 
-    func floatingPanel(_ vc: FloatingPanelController, behaviorFor newCollection: UITraitCollection) -> FloatingPanelBehavior? {
-        return FloatingPanelStocksBehavior()
+    func floatingPanelDidMove(_ vc: FloatingPanelController) {
+        if vc.isDecelerating == false {
+            let loc = vc.surfaceEdgeLocation
+            let minY = vc.surfaceEdgeLocation(for: .full).y
+            let maxY = vc.surfaceEdgeLocation(for: .tip).y
+            vc.surfaceEdgeLocation = CGPoint(x: loc.x, y: min(max(loc.y, minY), maxY))
+        }
     }
 
     func floatingPanelWillBeginDragging(_ vc: FloatingPanelController) {
-        if vc.position == .full {
+        if vc.state == .full {
             // Dimiss top bar with dissolve animation
             UIView.animate(withDuration: 0.25) {
                 self.topBannerView.alpha = 0.0
@@ -82,8 +88,9 @@ class ViewController: UIViewController, FloatingPanelControllerDelegate {
             }
         }
     }
-    func floatingPanelDidEndDragging(_ vc: FloatingPanelController, withVelocity velocity: CGPoint, targetPosition: FloatingPanelPosition) {
-        if targetPosition == .full {
+
+    func floatingPanelWillEndDragging(_ vc: FloatingPanelController, withVelocity velocity: CGPoint, targetState: UnsafeMutablePointer<FloatingPanelState>) {
+        if targetState.pointee == .full {
             // Present top bar with dissolve animation
             UIView.animate(withDuration: 0.25) {
                 self.topBannerView.alpha = 1.0
@@ -102,23 +109,19 @@ class NewsViewController: UIViewController {
 // MARK: My custom layout
 
 class FloatingPanelStocksLayout: FloatingPanelLayout {
-    var initialPosition: FloatingPanelPosition {
-        return .tip
+    let anchorPosition: FloatingPanelPosition = .bottom
+    let initialState: FloatingPanelState = .tip
+
+    var stateAnchors: [FloatingPanelState: FloatingPanelLayoutAnchoring] {
+        return [
+            .full: FloatingPanelLayoutAnchor(absoluteInset: 56.0, edge: .top, referenceGuide: .safeArea),
+            .half: FloatingPanelLayoutAnchor(absoluteInset: 262.0, edge: .bottom, referenceGuide: .safeArea),
+             /* Visible + ToolView */
+            .tip: FloatingPanelLayoutAnchor(absoluteInset: 85.0 + 44.0, edge: .bottom, referenceGuide: .safeArea),
+        ]
     }
 
-    var topInteractionBuffer: CGFloat { return 0.0 }
-    var bottomInteractionBuffer: CGFloat { return 0.0 }
-
-    func insetFor(position: FloatingPanelPosition) -> CGFloat? {
-        switch position {
-        case .full: return 56.0
-        case .half: return 262.0
-        case .tip: return 85.0 + 44.0 // Visible + ToolView
-        default: return nil
-        }
-    }
-
-    func backdropAlphaFor(position: FloatingPanelPosition) -> CGFloat {
+    func backdropAlpha(for state: FloatingPanelState) -> CGFloat {
         return 0.0
     }
 }
@@ -130,12 +133,12 @@ class FloatingPanelStocksBehavior: FloatingPanelBehavior {
         return 15.0
     }
 
-    func interactionAnimator(_ fpc: FloatingPanelController, to targetPosition: FloatingPanelPosition, with velocity: CGVector) -> UIViewPropertyAnimator {
+    func interactionAnimator(_ fpc: FloatingPanelController, to targetPosition: FloatingPanelState, with velocity: CGVector) -> UIViewPropertyAnimator {
         let timing = timeingCurve(to: targetPosition, with: velocity)
         return UIViewPropertyAnimator(duration: 0, timingParameters: timing)
     }
 
-    private func timeingCurve(to: FloatingPanelPosition, with velocity: CGVector) -> UITimingCurveProvider {
+    private func timeingCurve(to: FloatingPanelState, with velocity: CGVector) -> UITimingCurveProvider {
         let damping = self.damping(with: velocity)
         return UISpringTimingParameters(dampingRatio: damping,
                                         frequencyResponse: 0.4,

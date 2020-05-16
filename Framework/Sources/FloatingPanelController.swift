@@ -14,6 +14,18 @@ import UIKit
     @objc(floatingPanel:layoutForSize:) optional
     func floatingPanel(_ fpc: FloatingPanelController, layoutFor size: CGSize) -> FloatingPanelLayout
 
+    /// Returns a UIViewPropertyAnimator object to add/present a floating panel to a position.
+    ///
+    /// Default is the spring animator with 0.25 sec duration and `UIScrollView.DecelerationRate.fast` deceleration rate.
+    @objc(floatingPanel:animatorForPresentingToState:) optional
+    func floatingPanel(_ fpc: FloatingPanelController, animatorForPresentingTo state: FloatingPanelState) -> UIViewPropertyAnimator
+
+    /// Returns a UIViewPropertyAnimator object to remove/dismiss a floating panel from a position.
+    ///
+    /// Default is the spring animator with 0.25 sec duration and `UIScrollView.DecelerationRate.fast` deceleration rate.
+    @objc(floatingPanel:animatorForDismissingWithVelocity:) optional
+    func floatingPanel(_ fpc: FloatingPanelController, animatorForDismissingWith velocity: CGVector) -> UIViewPropertyAnimator
+
     /// Called when the floating panel has changed to a new position. Can be called inside an animation block, so any
     /// view properties set inside this function will be automatically animated alongside the panel.
     @objc optional
@@ -43,12 +55,19 @@ import UIKit
     @objc optional
     func floatingPanelDidEndDecelerating(_ fpc: FloatingPanelController) // called when scroll view grinds to a halt
 
+    // TODO: Write doc comment
+    @objc(floatingPanel:shouldRemoveAtLocation:withVelocity:)
+    optional
+    func floatingPanel(_ fpc: FloatingPanelController, shouldRemoveAt location: CGPoint, with velocity: CGVector) -> Bool
+
     // called on start of dragging to remove its views from a parent view controller
-    @objc optional
-    func floatingPanelDidEndDraggingToRemove(_ vc: FloatingPanelController, withVelocity velocity: CGPoint)
+    @objc(floatingPanelWillRemove:withVelocity:)
+    optional
+    func floatingPanelWillRemove(_ fpc: FloatingPanelController, with velocity: CGPoint)
+
     // called when its views are removed from a parent view controller
     @objc optional
-    func floatingPanelDidEndRemove(_ vc: FloatingPanelController)
+    func floatingPanelDidRemove(_ fpc: FloatingPanelController)
 
     /// Asks the delegate if the other gesture recognizer should be allowed to recognize the gesture in parallel.
     ///
@@ -550,6 +569,8 @@ open class FloatingPanelController: UIViewController {
             return
         }
 
+        delegate?.floatingPanelWillRemove?(self, with: .zero)
+
         hide(animated: animated) { [weak self] in
             guard let `self` = self else { return }
             #if swift(>=4.2)
@@ -566,6 +587,7 @@ open class FloatingPanelController: UIViewController {
             self.removeFromParentViewController()
             #endif
 
+            self.delegate?.floatingPanelDidRemove?(self)
             completion?()
         }
     }

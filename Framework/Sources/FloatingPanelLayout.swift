@@ -309,89 +309,6 @@ class FloatingPanelLayoutAdapter {
         }
     }
 
-    func positionY(for pos: FloatingPanelState) -> CGFloat {
-        let bounds = vc.view.bounds
-        let safeAreaBounds = vc.view.bounds.inset(by: vc.fp_safeAreaInsets)
-
-        if pos == .hidden {
-            switch layout.anchorPosition {
-            case .top: return 0.0
-            case .bottom: return bounds.height
-            }
-        }
-
-        guard let anchor = layout.stateAnchors[pos] else {
-            return .nan
-        }
-
-        switch anchor {
-        case let ianchor as FloatingPanelIntrinsicLayoutAnchor:
-            let surfaceIntrinsicHeight = surfaceView.intrinsicContentSize.height
-            switch layout.anchorPosition {
-            case .top:
-                var ret = surfaceIntrinsicHeight
-                if ianchor.referenceGuide == .safeArea {
-                    ret += safeAreaInsets.top
-                }
-                if ianchor.isAbsolute {
-                    return ret - ianchor.offset
-                } else {
-                    return ret - surfaceIntrinsicHeight * ianchor.offset
-                }
-            case .bottom:
-                var ret = bounds.height - surfaceIntrinsicHeight
-                if ianchor.referenceGuide == .safeArea {
-                    ret -= safeAreaInsets.bottom
-                }
-                if ianchor.isAbsolute {
-                    return ret + ianchor.offset
-                } else {
-                    return ret + surfaceIntrinsicHeight * ianchor.offset
-                }
-            }
-        case let anchor as FloatingPanelLayoutAnchor:
-            switch anchor.referenceGuide {
-            case .safeArea:
-                switch anchor.referenceEdge {
-                case .top:
-                    let base = safeAreaBounds.minY
-                    if anchor.isAbsolute {
-                        return base + anchor.inset
-                    }
-                    return base + safeAreaBounds.height * anchor.inset
-                case .bottom:
-                    let base = safeAreaBounds.maxY
-                    if anchor.isAbsolute {
-                        return base - anchor.inset
-                    }
-                    return base - (safeAreaBounds.height * anchor.inset)
-                default:
-                    fatalError("Unsupported edges")
-                }
-            case .superview:
-                switch anchor.referenceEdge {
-                case .top:
-                    let base = bounds.minY
-                    if anchor.isAbsolute {
-                        return base + anchor.inset
-                    }
-                    return base + bounds.height * anchor.inset
-                case .bottom:
-                    let base = bounds.maxY
-                    if anchor.isAbsolute {
-                        return base - anchor.inset
-                    }
-                    return base - (bounds.height * anchor.inset)
-                default:
-                    fatalError("Unsupported edges")
-                }
-            }
-        default:
-            assertionFailure("Unsupported FloatingPanelLayoutAnchoring object")
-            return 0.0
-        }
-    }
-
     var surfaceEdgeLocation: CGPoint {
         get {
             let displayScale = surfaceView.traitCollection.displayScale
@@ -408,11 +325,6 @@ class FloatingPanelLayoutAdapter {
         }
     }
 
-    func surfaceEdgeLocation(for state: FloatingPanelState) -> CGPoint {
-        return CGPoint(x: 0.0,
-                       y: displayTrunc(positionY(for: state), by: surfaceView.traitCollection.displayScale))
-    }
-
     init(vc: FloatingPanelController,
          surfaceView: FloatingPanelSurfaceView,
          backdropView: FloatingPanelBackdropView,
@@ -423,6 +335,11 @@ class FloatingPanelLayoutAdapter {
         self.backdropView = backdropView
     }
 
+    func surfaceEdgeLocation(for state: FloatingPanelState) -> CGPoint {
+        return CGPoint(x: 0.0,
+                       y: displayTrunc(positionY(for: state), by: surfaceView.traitCollection.displayScale))
+    }
+
     var offsetFromEdgeMost: CGFloat {
         switch layout.anchorPosition {
         case .top:
@@ -431,6 +348,89 @@ class FloatingPanelLayoutAdapter {
             return positionY(for: directionalLeastState) - surfaceView.presentationFrame.minY
         }
     }
+
+    func positionY(for pos: FloatingPanelState) -> CGFloat {
+         let bounds = vc.view.bounds
+         let safeAreaBounds = vc.view.bounds.inset(by: vc.fp_safeAreaInsets)
+
+         if pos == .hidden {
+             switch layout.anchorPosition {
+             case .top: return 0.0
+             case .bottom: return bounds.height
+             }
+         }
+
+         guard let anchor = layout.stateAnchors[pos] else {
+             return .nan
+         }
+
+         switch anchor {
+         case let ianchor as FloatingPanelIntrinsicLayoutAnchor:
+             let surfaceIntrinsicHeight = surfaceView.intrinsicContentSize.height
+             switch layout.anchorPosition {
+             case .top:
+                 var ret = surfaceIntrinsicHeight
+                 if ianchor.referenceGuide == .safeArea {
+                     ret += safeAreaInsets.top
+                 }
+                 if ianchor.isAbsolute {
+                     return ret - ianchor.offset
+                 } else {
+                     return ret - surfaceIntrinsicHeight * ianchor.offset
+                 }
+             case .bottom:
+                 var ret = bounds.height - surfaceIntrinsicHeight
+                 if ianchor.referenceGuide == .safeArea {
+                     ret -= safeAreaInsets.bottom
+                 }
+                 if ianchor.isAbsolute {
+                     return ret + ianchor.offset
+                 } else {
+                     return ret + surfaceIntrinsicHeight * ianchor.offset
+                 }
+             }
+         case let anchor as FloatingPanelLayoutAnchor:
+             switch anchor.referenceGuide {
+             case .safeArea:
+                 switch anchor.referenceEdge {
+                 case .top:
+                     let base = safeAreaBounds.minY
+                     if anchor.isAbsolute {
+                         return base + anchor.inset
+                     }
+                     return base + safeAreaBounds.height * anchor.inset
+                 case .bottom:
+                     let base = safeAreaBounds.maxY
+                     if anchor.isAbsolute {
+                         return base - anchor.inset
+                     }
+                     return base - (safeAreaBounds.height * anchor.inset)
+                 default:
+                     fatalError("Unsupported edges")
+                 }
+             case .superview:
+                 switch anchor.referenceEdge {
+                 case .top:
+                     let base = bounds.minY
+                     if anchor.isAbsolute {
+                         return base + anchor.inset
+                     }
+                     return base + bounds.height * anchor.inset
+                 case .bottom:
+                     let base = bounds.maxY
+                     if anchor.isAbsolute {
+                         return base - anchor.inset
+                     }
+                     return base - (bounds.height * anchor.inset)
+                 default:
+                     fatalError("Unsupported edges")
+                 }
+             }
+         default:
+             assertionFailure("Unsupported FloatingPanelLayoutAnchoring object")
+             return 0.0
+         }
+     }
 
     func edgeY(_ frame: CGRect) -> CGFloat {
         switch layout.anchorPosition {

@@ -413,10 +413,6 @@ class FloatingPanelLayoutAdapter {
                        y: displayTrunc(positionY(for: state), by: surfaceView.traitCollection.displayScale))
     }
 
-    func isSurfaceDisplayEqual(to state: FloatingPanelState) -> Bool {
-        return displayEqual(edgeY(surfaceView.frame), positionY(for: state), by: surfaceView.traitCollection.displayScale)
-    }
-
     init(vc: FloatingPanelController,
          surfaceView: FloatingPanelSurfaceView,
          backdropView: FloatingPanelBackdropView,

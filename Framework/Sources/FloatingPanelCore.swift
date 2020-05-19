@@ -632,7 +632,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             vc.delegate?.floatingPanelWillEndDragging?(vc, withVelocity: velocity, targetState: &targetPosition)
         }
 
-        if scrollView != nil, !stopScrollDeceleration, 0 == layoutAdapter.offsetFromEdgeMost, targetPosition == layoutAdapter.edgeMostState {
+        if shouldDecelerate(to: targetPosition) {
             if let vc = viewcontroller {
                 vc.delegate?.floatingPanelDidEndDragging?(vc, willDecelerate: false)
             }
@@ -760,6 +760,16 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         // Cancel the pan gesture so that panningEnd(with:velocity:) is called
         panGestureRecognizer.isEnabled = false
         panGestureRecognizer.isEnabled = true
+    }
+
+    private func shouldDecelerate(to targetState: FloatingPanelState) -> Bool {
+        if scrollView != nil, !stopScrollDeceleration, 0 == layoutAdapter.offsetFromEdgeMost, targetState == layoutAdapter.edgeMostState {
+            return true
+        }
+        if layoutAdapter.positionY(for: targetState) == layoutAdapter.surfaceEdgeLocation.y, targetState == layoutAdapter.edgeLeastState {
+            return true
+        }
+        return false
     }
 
     private func startDeceleration(to targetPosition: FloatingPanelState, with velocity: CGPoint) {

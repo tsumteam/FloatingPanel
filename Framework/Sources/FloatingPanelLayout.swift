@@ -312,15 +312,35 @@ class FloatingPanelLayoutAdapter {
     var surfaceEdgeLocation: CGPoint {
         get {
             let displayScale = surfaceView.traitCollection.displayScale
-            return CGPoint(x: 0.0,
-                           y: displayTrunc(edgeY(surfaceView.frame), by: displayScale))
+            return CGPoint(x: 0.0, y: displayTrunc(edgeY(surfaceView.frame), by: displayScale))
         }
         set {
-            switch layout.anchorPosition {
-            case .top:
-                return surfaceView.frame.origin.y = newValue.y - surfaceView.bounds.height
-            case .bottom:
-                return surfaceView.frame.origin.y = newValue.y
+            if let interactionConstraint = interactionEdgeConstraint {
+                interactionConstraint.constant = newValue.y
+                layoutSurfaceIfNeeded()
+            } else if let animationConstraint = animationEdgeConstraint, let anchor = layout.stateAnchors[vc.state] {
+                switch anchor.referenceEdge {
+                case .top:
+                    animationConstraint.constant = newValue.y
+                    if anchor.referenceGuide == .safeArea {
+                        animationConstraint.constant -= safeAreaInsets.top
+                    }
+                case .bottom:
+                    animationConstraint.constant = newValue.y - vc.view.bounds.height
+                    if anchor.referenceGuide == .safeArea {
+                           animationConstraint.constant += safeAreaInsets.bottom
+                    }
+                default:
+                    break
+                }
+                layoutSurfaceIfNeeded()
+            } else {
+                switch layout.anchorPosition {
+                case .top:
+                    return surfaceView.frame.origin.y = newValue.y - surfaceView.bounds.height
+                case .bottom:
+                    return surfaceView.frame.origin.y = newValue.y
+                }
             }
         }
     }
@@ -534,46 +554,43 @@ class FloatingPanelLayoutAdapter {
         NSLayoutConstraint.deactivate(constraint: interactionEdgeConstraint)
         interactionEdgeConstraint = nil
 
-        let animationConstraint: NSLayoutConstraint
-        var target = positionY(for: state)
+        let surfaceAnchor: NSLayoutYAxisAnchor
         switch layout.anchorPosition {
         case .top:
-            if anchor.referenceGuide == .safeArea {
-                if anchor.referenceEdge == .bottom {
-                    let baseHeight = vc.view.bounds.height - safeAreaInsets.bottom
-                    target = -(baseHeight - target)
-                    animationConstraint = surfaceView.bottomAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.bottomAnchor,
-                                                                              constant: -(baseHeight - edgeY(surfaceView.frame)))
-                } else {
-                    animationConstraint = surfaceView.bottomAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.topAnchor,
-                                                                           constant: edgeY(surfaceView.frame) - safeAreaInsets.top)
-                    target -= safeAreaInsets.top
-                }
-            } else {
-                animationConstraint = surfaceView.bottomAnchor.constraint(equalTo: vc.view.topAnchor,
-                                                                          constant: edgeY(surfaceView.frame))
-            }
+            surfaceAnchor = surfaceView.bottomAnchor
         case .bottom:
-            if anchor.referenceGuide == .safeArea {
-                if anchor.referenceEdge == .bottom {
-                    let baseHeight = vc.view.bounds.height - safeAreaInsets.bottom
-                    target = -(baseHeight - target)
-                    animationConstraint = surfaceView.topAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.bottomAnchor,
-                                                                           constant: -(baseHeight - edgeY(surfaceView.frame)))
-                } else {
-                    animationConstraint = surfaceView.topAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.topAnchor,
-                                                                           constant: edgeY(surfaceView.frame) - safeAreaInsets.top)
-                    target -= safeAreaInsets.top
-                }
+            surfaceAnchor = surfaceView.topAnchor
+        }
+
+        var targetY = positionY(for: state)
+
+        let animationConstraint: NSLayoutConstraint
+        if anchor.referenceGuide == .safeArea {
+            if anchor.referenceEdge == .bottom {
+                let baseHeight = vc.view.bounds.height - safeAreaInsets.bottom
+                targetY = -(baseHeight - targetY)
+                animationConstraint = surfaceAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.bottomAnchor,
+                                                               constant: -(baseHeight - edgeY(surfaceView.frame)))
             } else {
-                animationConstraint = surfaceView.topAnchor.constraint(equalTo: vc.view.topAnchor,
-                                                                       constant: edgeY(surfaceView.frame))
+                animationConstraint = surfaceAnchor.constraint(equalTo: vc.fp_safeAreaLayoutGuide.topAnchor,
+                                                               constant: edgeY(surfaceView.frame) - safeAreaInsets.top)
+                targetY -= safeAreaInsets.top
+            }
+        } else {
+            if anchor.referenceEdge == .bottom {
+                let baseHeight = vc.view.bounds.height
+                targetY = -(baseHeight - targetY)
+                animationConstraint = surfaceAnchor.constraint(equalTo: vc.view.bottomAnchor,
+                                                                       constant: -(baseHeight - edgeY(surfaceView.frame)))
+            } else {
+                animationConstraint = surfaceAnchor.constraint(equalTo: vc.view.topAnchor,
+                                                                          constant: edgeY(surfaceView.frame))
             }
         }
 
         NSLayoutConstraint.activate([animationConstraint])
         self.animationEdgeConstraint = animationConstraint
-        return (animationConstraint, target)
+        return (animationConstraint, targetY)
     }
 
     private func tearDownAnimationEdgeConstraint() {

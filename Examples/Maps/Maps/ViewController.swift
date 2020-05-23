@@ -89,6 +89,9 @@ class ViewController: UIViewController, MKMapViewDelegate {
 
     func layoutPanelForPhone() {
         fpc.addPanel(toParent: self, animated: true)
+        let appearance = FloatingPanelSurfaceAppearance()
+        appearance.backgroundColor = .clear
+        fpc.surfaceView.appearance = appearance
     }
 
     func appearanceForPad() {
@@ -181,6 +184,13 @@ class PhonePanelDelegate: NSObject, FloatingPanelControllerDelegate {
         if targetState.pointee != .full {
             owner.searchVC.hideHeader(animated: true)
         }
+        if targetState.pointee == .tip {
+            vc.contentMode = .static
+        }
+    }
+
+    func floatingPanelDidEndDecelerating(_ fpc: FloatingPanelController) {
+        fpc.contentMode = .fitToBounds
     }
 }
 

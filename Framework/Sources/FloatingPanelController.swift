@@ -266,7 +266,7 @@ open class FloatingPanelController: UIViewController {
     public var contentMode: ContentMode = .static {
         didSet {
             guard state != .hidden else { return }
-            activateLayout(forceLayout: true)
+            activateLayout(forceLayout: false)
         }
     }
 

@@ -801,7 +801,6 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
                 let currentY = vc.surfaceEdgeLocation.y
                 let translation = CGPoint(x: 0, y: data.value - initialData.value)
                 self.backdropView.alpha = self.getBackdropAlpha(at: currentY, with: translation)
-                vc.view.layoutIfNeeded()
                 vc.delegate?.floatingPanelDidMove?(vc)
         },
             completion: {

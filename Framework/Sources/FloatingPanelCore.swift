@@ -777,7 +777,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         guard let vc = viewcontroller else { return }
 
         isDecelerating = true
-        vc.delegate?.floatingPanelWillBeginDecelerating?(vc)
+        vc.delegate?.floatingPanelWillBeginDecelerating?(vc, to: targetPosition)
         move(to: targetPosition, with: velocity) {
             self.endDeceleration(true)
         }

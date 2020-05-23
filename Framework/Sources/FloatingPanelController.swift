@@ -51,7 +51,7 @@ import UIKit
     func floatingPanelDidEndDragging(_ fpc: FloatingPanelController, willDecelerate decelerate: Bool)
 
     @objc optional
-    func floatingPanelWillBeginDecelerating(_ fpc: FloatingPanelController) // called on finger up as we are moving
+    func floatingPanelWillBeginDecelerating(_ fpc: FloatingPanelController, to state: FloatingPanelState) // called on finger up as we are moving
     @objc optional
     func floatingPanelDidEndDecelerating(_ fpc: FloatingPanelController) // called when scroll view grinds to a halt
 

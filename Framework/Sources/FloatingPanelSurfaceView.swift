@@ -126,6 +126,10 @@ public class FloatingPanelSurfaceView: UIView {
         super.init(coder: aDecoder)
         addSubViews()
     }
+  
+  public func setCornerRadius(to value: CGFloat) {
+    cornerRadius = value
+  }
 
     private func addSubViews() {
         super.backgroundColor = .clear

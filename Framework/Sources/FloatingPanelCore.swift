@@ -306,8 +306,8 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             let location = panGesture.location(in: surfaceView)
 
             let surfaceMinY = surfaceView.presentationFrame.minY
-            let adapterTopY = layoutAdapter.topY
-            let belowTop = surfaceMinY > (adapterTopY + (1.0 / surfaceView.traitCollection.displayScale))
+            let adapterTopY = layoutAdapter.bottomMaxY - layoutAdapter.topY
+            let belowTop = false //surfaceMinY > (adapterTopY + (1.0 / surfaceView.traitCollection.displayScale))
             log.debug("scroll gesture(\(state):\(panGesture.state)) --",
                 "belowTop = \(belowTop),",
                 "interactionInProgress = \(interactionInProgress),",
@@ -375,7 +375,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         case panGestureRecognizer:
             let translation = panGesture.translation(in: panGestureRecognizer.view!.superview)
             let location = panGesture.location(in: panGesture.view)
-
+            
             log.debug("panel gesture(\(state):\(panGesture.state)) --",
                 "translation =  \(translation.y), location = \(location.y), velocity = \(velocity.y)")
 
@@ -452,9 +452,9 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         }
 
         guard
-            state == layoutAdapter.topMostState,   // When not top most(i.e. .full), don't scroll.
-            interactionInProgress == false,        // When interaction already in progress, don't scroll.
-            surfaceView.frame.minY == layoutAdapter.topY
+          (state == layoutAdapter.topMostState || state == .half),   // When not top most(i.e. .full), don't scroll.
+            interactionInProgress == false//,        // When interaction already in progress, don't scroll.
+//            surfaceView.frame.minY == layoutAdapter.topY
         else {
             return false
         }

@@ -120,7 +120,7 @@ public extension FloatingPanelBehavior {
     }
 
     func allowsRubberBanding(for edge: UIRectEdge) -> Bool {
-        return false
+        return true
     }
 }
 

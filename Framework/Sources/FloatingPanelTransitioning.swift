@@ -22,6 +22,13 @@ class FloatingPanelModalTransition: NSObject, UIViewControllerTransitioningDeleg
 }
 
 class FloatingPanelPresentationController: UIPresentationController {
+  override var shouldPresentInFullscreen: Bool {
+    return false
+  }
+  
+  override var presentationStyle: UIModalPresentationStyle {
+    return .overCurrentContext
+  }
     override func presentationTransitionWillBegin() {
         // Must call here even if duplicating on in containerViewWillLayoutSubviews()
         // Because it let the floating panel present correctly with the presentation animation

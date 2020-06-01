@@ -234,9 +234,10 @@ open class FloatingPanelController: UIViewController {
 
     private func setUp() {
         _ = FloatingPanelController.dismissSwizzling
-
-        modalPresentationStyle = .custom
-        transitioningDelegate = modalTransition
+      
+      modalPresentationStyle = .custom
+      transitioningDelegate = modalTransition
+        
 
         floatingPanel = FloatingPanelCore(self,
                                       layout: fetchLayout(for: self.traitCollection),

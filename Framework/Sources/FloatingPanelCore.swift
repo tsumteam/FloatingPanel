@@ -66,6 +66,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         backdropView = FloatingPanelBackdropView()
         backdropView.backgroundColor = .black
         backdropView.alpha = 0.0
+        vc.delegate?.backdropChangedAlpha(to: 0.0)
 
         self.layoutAdapter = FloatingPanelLayoutAdapter(surfaceView: surfaceView,
                                                         backdropView: backdropView,
@@ -516,6 +517,8 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
 
         let currentY = surfaceView.frame.minY
         backdropView.alpha = getBackdropAlpha(at: currentY, with: translation)
+        viewcontroller?.delegate?.backdropChangedAlpha(to: backdropView.alpha)
+      
         preserveContentVCLayoutIfNeeded()
 
         let didMove = (preY != currentY)

@@ -555,6 +555,8 @@ class FloatingPanelLayoutAdapter {
         } else {
             self.backdropView.alpha = layout.backdropAlphaFor(position: target)
         }
+      
+      vc.delegate?.backdropChangedAlpha(to: backdropView.alpha)
     }
 
     private func checkLayoutConsistance() {

@@ -47,7 +47,7 @@ public protocol FloatingPanelControllerDelegate: class {
     /// This method will not be called if the controller doesn't track any scroll view.
     func floatingPanel(_ vc: FloatingPanelController, contentOffsetForPinning trackedScrollView: UIScrollView) -> CGPoint
   
-    func backdropChangedAlpha(to alpha: CGFloat)
+    func backdropChangedAlpha(_ vc: FloatingPanelController, to alpha: CGFloat)
 }
 
 public extension FloatingPanelControllerDelegate {

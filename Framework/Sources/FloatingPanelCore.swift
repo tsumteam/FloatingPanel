@@ -66,7 +66,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
         backdropView = FloatingPanelBackdropView()
         backdropView.backgroundColor = .black
         backdropView.alpha = 0.0
-        vc.delegate?.backdropChangedAlpha(to: 0.0)
+        vc.delegate?.backdropChangedAlpha(vc, to: 0.0)
 
         self.layoutAdapter = FloatingPanelLayoutAdapter(surfaceView: surfaceView,
                                                         backdropView: backdropView,
@@ -179,6 +179,20 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
     }
 
     // MARK: - UIGestureRecognizerDelegate
+  
+  public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+    guard gestureRecognizer == panGestureRecognizer else { return true }
+    
+    let location = gestureRecognizer.location(in: gestureRecognizer.view)
+    
+    if location.y < 80 {
+      print("START")
+    } else {
+      print("NO START")
+    }
+    
+    return true
+  }
 
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
                                   shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
@@ -308,7 +322,7 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
 
             let surfaceMinY = surfaceView.presentationFrame.minY
             let adapterTopY = layoutAdapter.bottomMaxY - layoutAdapter.topY
-            let belowTop = false //surfaceMinY > (adapterTopY + (1.0 / surfaceView.traitCollection.displayScale))
+            let belowTop = surfaceMinY > (adapterTopY + (1.0 / surfaceView.traitCollection.displayScale))
             log.debug("scroll gesture(\(state):\(panGesture.state)) --",
                 "belowTop = \(belowTop),",
                 "interactionInProgress = \(interactionInProgress),",
@@ -379,7 +393,8 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             
             log.debug("panel gesture(\(state):\(panGesture.state)) --",
                 "translation =  \(translation.y), location = \(location.y), velocity = \(velocity.y)")
-
+            
+            
             if interactionInProgress == false, isDecelerating == false,
                 let vc = viewcontroller, vc.delegate?.floatingPanelShouldBeginDragging(vc) == false {
                 return
@@ -460,6 +475,10 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
             return false
         }
 
+      if point.y > 80 {
+        return true
+      }
+      
         // When the current and initial point within grabber area, do scroll.
         if grabberAreaFrame.contains(point), !grabberAreaFrame.contains(initialLocation) {
             return true
@@ -517,7 +536,10 @@ class FloatingPanelCore: NSObject, UIGestureRecognizerDelegate {
 
         let currentY = surfaceView.frame.minY
         backdropView.alpha = getBackdropAlpha(at: currentY, with: translation)
-        viewcontroller?.delegate?.backdropChangedAlpha(to: backdropView.alpha)
+      
+      if let viewcontroller = viewcontroller {
+        viewcontroller.delegate?.backdropChangedAlpha(viewcontroller, to: backdropView.alpha)
+      }
       
         preserveContentVCLayoutIfNeeded()
 
